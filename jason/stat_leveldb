@@ -1,0 +1,50 @@
+#! /usr/bin/env python
+
+import sys
+import leveldb
+
+
+def main():
+    if len(sys.argv) < 2:
+        print 'Usage:'
+        print 'Print some stats about a leveldb:'
+        print '  stat_leveldb <level_db_file>'
+        sys.exit(1)
+
+    dbfile = sys.argv[1]
+    db = leveldb.LevelDB(dbfile)
+
+    print 'Reading from db %s ...' % dbfile
+    keys = [key for key in db.RangeIter(include_value = False)]
+    count = len(keys)
+
+    print 'DB contains %d (k,v) pairs' % count
+
+    if count == 0:
+        print 'DB Empty'
+        return
+
+    print 'Keys:'
+    if count > 10:
+        for ii in range(5):
+            print '  ', keys[ii]
+        print '  ', '...skipped %d keys...' % (count-10)
+        for ii in range(count-5, count):
+            print '  ', keys[ii]
+    else:
+        for ii in range(len(keys)):
+            print '  ', keys[ii]
+
+    print 'First value:'
+    first_key,first_val = db.RangeIter(include_value = True).next()
+    print '  len(val) = %d' % len(first_val)
+    Nmax = 500
+    if len(first_val) > Nmax:
+        print '  val[:%d]:' % Nmax
+        print first_val[:Nmax]
+    else:
+        print '  val:'
+        print first_val
+
+if __name__ == '__main__':
+    main()
