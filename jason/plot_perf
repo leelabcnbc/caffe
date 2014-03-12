@@ -1,0 +1,22 @@
+#! /bin/bash -x
+
+if [ "$1" = "" ]; then
+    echo 'Usage:'
+    echo 'Plot some stats about training from a log file.'
+    echo '  plot_perf <log_file>'
+    exit 1
+fi
+
+file="$1"
+
+tmp0="`mktemp`"
+tmp1="`mktemp`"
+tmploss="`mktemp`"
+
+cat "$file" | grep -i 'Test score #0' | egrep -o ': [0-9.]+' | cut -c 3- > "$tmp0"
+cat "$file" | grep -i 'Test score #1' | egrep -o ': [0-9.]+' | cut -c 3- > "$tmp1"
+cat "$file" | grep 'loss = ' | egrep -o '= [0-9.]+' | cut -c 3-          > "$tmploss"
+
+
+
+#rm "$tmp0" "$tmp1" "$tmploss"
