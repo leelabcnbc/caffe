@@ -52,7 +52,9 @@ Makefile.config
 # 2. custom, and live on their own unless they're deliberated contributed
 models/*
 data/*
-examples/*
+examples/cifar/*
+#examples/imagenet/*
+examples/lenet/*
 
 # Don't version the generated documentation
 docs/_site

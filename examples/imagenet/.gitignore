@@ -1,0 +1,6 @@
+caffe_imagenet_train_iter_*
+*_leveldb
+results
+*.png
+*.log
+*.err
