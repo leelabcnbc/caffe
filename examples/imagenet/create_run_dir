@@ -5,7 +5,7 @@ set -e
 
 if [ "$GIT_RESULTS_MANAGER_DIR" = "" ]; then
     echo "You must run this from within GitResultsManager, something like this:"
-    echo "   resman -n `basename $0`"
+    echo "   resman `basename $0`"
     exit 1
 fi
 
@@ -13,7 +13,7 @@ dir="$GIT_RESULTS_MANAGER_DIR"
 
 if [ "$1" = "" -o "$2" = "" -o "$3" = "" ]; then
     echo "You must provide three arguments: traindb valdb meanfile, something like this:"
-    echo "   resman -n `basename $0` imagenet_train_leveldb imagenet_val_leveldb ../../data/ilsvrc12/FETCHED_imagenet_mean.binaryproto"
+    echo "   resman `basename $0` imagenet_train_leveldb imagenet_val_leveldb ../../data/ilsvrc12/FETCHED_imagenet_mean.binaryproto"
     exit 1
 fi
 
@@ -23,7 +23,7 @@ mean="$3"
 
 echo "Directory: $dir"
 
-files="../../build/tools/train_net.bin _train_start.sh _train_resume.sh imagenet_solver.prototxt imagenet_train.prototxt imagenet_val.prototxt"
+files="../../build/tools/train_net.bin 0_cp_data 1_submit_train 2_train_now imagenet_solver.prototxt imagenet_train.prototxt imagenet_val.prototxt"
 
 echo
 echo "Copying required files:"
@@ -47,12 +47,7 @@ ln -sv "`pwd`/$train_leveldb" $dir/imagenet_train_leveldb.pristine
 echo -n "  "
 ln -sv "`pwd`/$val_leveldb" $dir/imagenet_val_leveldb.pristine
 
-echo "Submitting job..."
-
-# jobname is formed by shortening something like
-# "results/140311_212922_18c4d2f_priv_junk2"
-# to this
-# "140311_212922_junk2"
 jobname="`basename \"$dir\" | gawk -F _ '{print $1 \"_\" $2 \"_\" $5}'`"
+echo "$jobname" > $dir/jobname
 
-qsub -A EvolvingAI -l nodes=1:ppn=4:gpus=1:k20 -l walltime=168:00:00 -N "$jobname" -d "$dir" ./_train_start.sh
+echo -e "\n\nNext step: cd $dir and make sure data is in place, then run ./1_submit_train"

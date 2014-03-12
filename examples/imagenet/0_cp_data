@@ -1,0 +1,19 @@
+#! /bin/bash
+
+fast_copy() {
+    if [ -e "$2" ]; then
+        # If destination exists, use rsync
+        echo "  rsync -aW $1 $2"
+        rsync -aW "$1"/ "$2"/
+    else
+        # If it's a fresh copy, just use cp (2x as fast)
+        echo "  cp -arL $1 $2"
+        cp -arL "$1" "$2"
+    fi
+}
+
+echo "Copying train and val datset (might take a while)..."
+fast_copy imagenet_val_leveldb.pristine   imagenet_val_leveldb
+fast_copy imagenet_train_leveldb.pristine imagenet_train_leveldb
+echo "Done."
+

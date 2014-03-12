@@ -1,0 +1,45 @@
+#! /bin/bash
+
+#Exit on errors
+set -e
+
+# Run like this:
+# qsub -N ..... ./1_train_start
+
+echo 
+echo "Beginning training."
+echo "  Script:   `basename $0`"
+echo "  Date:     `date`"
+echo "  Hostname: `hostname`"
+echo "  nvidia-smi:"
+echo
+nvidia-smi | sed 's/^/    /g'
+echo
+echo "  Files here:"
+echo
+ls -ralt | sed 's/^/    /g'
+echo
+echo "  Dataset sizes:"
+echo
+du -sh imagenet_train_leveldb imagenet_val_leveldb | sed 's/^/    /g'
+
+# Figure out if we should resume or start fresh
+set +e
+ls -rt *solverstate 2>/dev/null 1>&2
+if [ "$?" = "0" ]; then
+    lastfile=`ls -rt *solverstate | tail -n 1`
+    echo "Resuming training from file: $lastfile"
+    echo "-------------------------------------------------"
+    GLOG_logtostderr=1 time ./train_net.bin imagenet_solver.prototxt $lastfile 2>&1
+    code="$?"
+else
+    echo "Starting training from scratch"
+    echo "-------------------------------------------------"
+    GLOG_logtostderr=1 time ./train_net.bin imagenet_solver.prototxt $lastfile 2>&1
+    code="$?"
+fi
+
+
+
+echo "-------------------------------------------------"
+echo "Finished (exit code: $code)."
