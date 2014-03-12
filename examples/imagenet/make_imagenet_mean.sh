@@ -5,6 +5,7 @@
 TOOLS=../../build/tools
 DATA=../../data/ilsvrc12
 
-$TOOLS/compute_image_mean.bin ilsvrc12_train_leveldb $DATA/imagenet_mean.binaryproto
+#$TOOLS/compute_image_mean.bin ilsvrc12_train_leveldb $DATA/imagenet_mean.binaryproto
+$TOOLS/compute_image_mean.bin imagenet_train_leveldb $DATA/imagenet_mean.binaryproto
 
 echo "Done."
