@@ -58,3 +58,6 @@ examples/lenet/*
 
 # Don't version the generated documentation
 docs/_site
+
+# JBY
+.DS_Store
