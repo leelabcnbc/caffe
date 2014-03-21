@@ -2,7 +2,7 @@
 
 import argparse
 from numpy import *
-import pyplot
+from matplotlib.pyplot import plot, subplot, figure, semilogy, legend, savefig, show, hold, axis, title, xlabel, ylabel
 
 
 def insert_most_recent(dictionary, key, value, timestamp):
@@ -91,7 +91,39 @@ def main():
     ts0_it, ts0 = arrays[2]
     ts1_it, ts1 = arrays[3]
 
-    print 'plot here...'
+    figure()
+
+    pl = plot
+    #pl = semilogy
+
+    subplot(3,1,1)
+    hold(True)
+    every = 10
+    pl(loss_train_it[::every], loss_train[::every], 'b-')
+    pl(ts1_it, ts1, 'r-')
+    axis('tight')
+    ylabel('Cost')
+
+    subplot(3,1,2)
+    plot(ts0_it, 1-ts0, 'g-')
+    ylabel('Top-1 error')
+    
+    subplot(3,1,3)
+    semilogy(lr_it, lr)
+    ylabel('Learning Rate')
+    xlabel('Iteration')
+
+    #savefig('lr.pdf')
+    savefig('loss.pdf')
+    #show()
+    show()
+    
+    from IPython import embed
+    embed()
+
+
+
+
 
 
     
