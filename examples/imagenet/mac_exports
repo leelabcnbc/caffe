@@ -1,0 +1,3 @@
+export PYTHONPATH=$HOME/s/caffe/python:$PYTHONPATH
+export LD_LIBRARY_PATH=/usr/local/cuda/lib
+export DYLD_LIBRARY_PATH=/opt/intel/mkl/lib
