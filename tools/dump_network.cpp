@@ -4,16 +4,18 @@
 // all the intermediate blobs produced by the net to individual binary
 // files stored in protobuffer binary formats.
 // Usage:
-//    dump_network input_net_param trained_net_param input_blob output_prefix 0/1
+//    dump_network input_net_param trained_net_param \
+//        input_blob output_prefix 0/1
 // if input_net_param is 'none', we will directly load the network from
 // trained_net_param. If the last argv is 1, we will do a forward-backward pass
 // before dumping everyting, and also dump the who network.
 
-#include <cuda_runtime.h>
-#include <fcntl.h>
-#include <google/protobuf/text_format.h>
+#include <string>
+#include <vector>
 
-#include <cstring>
+#include "cuda_runtime.h"
+#include "fcntl.h"
+#include "google/protobuf/text_format.h"
 
 #include "caffe/blob.hpp"
 #include "caffe/common.hpp"
@@ -23,10 +25,9 @@
 #include "caffe/util/io.hpp"
 #include "caffe/solver.hpp"
 
-using namespace caffe;
+using namespace caffe;  // NOLINT(build/namespaces)
 
 int main(int argc, char** argv) {
-  cudaSetDevice(1);
   Caffe::set_mode(Caffe::GPU);
   Caffe::set_phase(Caffe::TEST);
 
@@ -42,10 +43,10 @@ int main(int argc, char** argv) {
   ReadProtoFromBinaryFile(argv[2], &trained_net_param);
 
   vector<Blob<float>* > input_vec;
+  shared_ptr<Blob<float> > input_blob(new Blob<float>());
   if (strcmp(argv[3], "none") != 0) {
     BlobProto input_blob_proto;
     ReadProtoFromBinaryFile(argv[3], &input_blob_proto);
-    shared_ptr<Blob<float> > input_blob(new Blob<float>());
     input_blob->FromProto(input_blob_proto);
     input_vec.push_back(input_blob.get());
   }
@@ -57,13 +58,15 @@ int main(int argc, char** argv) {
   // Run the network without training.
   LOG(ERROR) << "Performing Forward";
   caffe_net->Forward(input_vec);
-  if (argc > 4 && strcmp(argv[4], "1")) {
+  if (argc > 5 && strcmp(argv[5], "1") == 0) {
     LOG(ERROR) << "Performing Backward";
+    Caffe::set_phase(Caffe::TRAIN);
     caffe_net->Backward();
     // Dump the network
     NetParameter output_net_param;
     caffe_net->ToProto(&output_net_param, true);
-    WriteProtoToBinaryFile(output_net_param, output_prefix + output_net_param.name());
+    WriteProtoToBinaryFile(output_net_param,
+        output_prefix + output_net_param.name());
   }
   // Now, let's dump all the layers
 
@@ -74,7 +77,8 @@ int main(int argc, char** argv) {
     LOG(ERROR) << "Dumping " << blob_names[blobid];
     BlobProto output_blob_proto;
     blobs[blobid]->ToProto(&output_blob_proto);
-    WriteProtoToBinaryFile(output_blob_proto, output_prefix + blob_names[blobid]);
+    WriteProtoToBinaryFile(output_blob_proto,
+        output_prefix + blob_names[blobid]);
   }
 
   return 0;

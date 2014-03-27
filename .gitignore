@@ -56,8 +56,9 @@ examples/cifar/*
 #examples/imagenet/*
 examples/lenet/*
 
-# Don't version the generated documentation
-docs/_site
-
 # JBY
 .DS_Store
+
+# Don't version the generated documentation
+docs/_site
+_site

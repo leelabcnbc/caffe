@@ -1,15 +1,15 @@
 #!/usr/bin/env sh
 # This scripts downloads the mnist data and unzips it.
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+DIR="$( cd "$(dirname "$0")" ; pwd -P )"
 cd $DIR
 
 echo "Downloading..."
 
-wget -q http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz
-wget -q http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz
-wget -q http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz
-wget -q http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz
+wget --no-check-certificate http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz
+wget --no-check-certificate http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz
+wget --no-check-certificate http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz
+wget --no-check-certificate http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz
 
 echo "Unzipping..."
 
