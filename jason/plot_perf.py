@@ -5,6 +5,7 @@ from numpy import *
 from matplotlib.pyplot import plot, subplot, figure, semilogy, legend, savefig, show, hold, axis, title, xlabel, ylabel
 
 
+
 def insert_most_recent(dictionary, key, value, timestamp):
     if key in dictionary:
         stored_item = dictionary[key]
@@ -76,8 +77,11 @@ def convert_dict(dd):
     return keys, array(values)
 
 
+
 def main():
     parser = argparse.ArgumentParser(description='Plots performance given one or more logfiles.')
+    parser.add_argument('--show', action = 'store_true',
+                        help = 'Show plots as well (default: off)')
     parser.add_argument('logfiles', type = str, nargs='+',
                         help = 'Log file(s) to scrape for performance numbers')
     args = parser.parse_args()
@@ -91,6 +95,12 @@ def main():
     ts0_it, ts0 = arrays[2]
     ts1_it, ts1 = arrays[3]
 
+    val_top1_err_it = ts0_it
+    val_top1_err    = 1-ts0
+
+
+
+    ###### plot_normal
     figure()
 
     pl = plot
@@ -105,7 +115,7 @@ def main():
     ylabel('Cost')
 
     subplot(3,1,2)
-    plot(ts0_it, 1-ts0, 'g-')
+    plot(val_top1_err_it, val_top1_err, 'g-')
     ylabel('Top-1 error')
     
     subplot(3,1,3)
@@ -113,19 +123,48 @@ def main():
     ylabel('Learning Rate')
     xlabel('Iteration')
 
-    #savefig('lr.pdf')
-    savefig('loss.pdf')
-    #show()
-    show()
+    savefig('plot_normal.pdf')
+
+
+
+    ###### plot_zoom
+    figure()
+
+    subplot(2,1,1)
+    hold(True)
+    every = 10
+    pl(loss_train_it[::every], loss_train[::every], 'b-')
+    pl(ts1_it, ts1, 'r-')
+    axis('tight')
+    ylabel('Cost')
     
-    from IPython import embed
-    embed()
+    axis('tight')
+    ax = axis()
+    frac = .05
+    yrange = [percentile(ts1, 0), percentile(ts1, 60)]
+    yrange = ((1+frac) * yrange[0] - frac * yrange[1], (1+frac) * yrange[1] - frac * yrange[0])
+    axis(ax[0:2] + yrange)
+
+    subplot(2,1,2)
+    plot(val_top1_err_it, val_top1_err, 'g-')
+    ylabel('Top-1 error')
+    xlabel('Iteration')
+
+    axis('tight')
+    ax = axis()
+    frac = .05
+    yrange = [percentile(val_top1_err, 0), percentile(val_top1_err, 60)]
+    yrange = ((1+frac) * yrange[0] - frac * yrange[1], (1+frac) * yrange[1] - frac * yrange[0])
+    axis(ax[0:2] + yrange)
+
+    savefig('plot_zoom.pdf')
+
+    if args.show:
+        show()
+        from IPython import embed
+        embed()
 
 
 
-
-
-
-    
 if __name__ == '__main__':
     main()
