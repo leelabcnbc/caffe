@@ -8,9 +8,24 @@ set -e
 
 echo 
 echo "Beginning training."
-echo "  Script:   `basename $0`"
-echo "  Date:     `date`"
-echo "  Hostname: `hostname`"
+echo "  Script:      `basename $0`"
+echo "  Date:        `date`"
+echo "  Hostname:    `hostname`"
+echo "  PBS_GPUFILE: $PBS_GPUFILE"
+if [ "$PBS_GPUFILE" = "" ]; then
+    echo "  --> WARNING: No PBS_GPUFILE, so we're not sure which GPU to use. Trying default."
+else
+    ls $PBS_GPUFILE >/dev/null || echo "Error: PBS_GPUFILE $PBS_GPUFILE not found."
+    gpustring=`cat $PBS_GPUFILE`
+    gpunum=`echo $gpustring | egrep -o 'gpu[0-9]' | egrep -o [0-9]`
+    if [ "$gpunum" = "" ]; then
+        echo "Error: gpunum is blank"
+        exit 1
+    fi
+    export CUDA_VISIBLE_DEVICES=$gpunum
+    echo "  GPU String:  $gpustring"
+    echo "  Using GPU:   $CUDA_VISIBLE_DEVICES"
+fi
 echo "  nvidia-smi:"
 echo
 nvidia-smi | sed 's/^/    /g'
@@ -22,24 +37,45 @@ echo
 echo "  Dataset sizes:"
 echo
 du -sh imagenet_train_leveldb imagenet_val_leveldb | sed 's/^/    /g'
+echo
+echo "  env:"
+echo
+env | sed 's/^/    /g'
+echo
+
 
 # Figure out if we should resume or start fresh
-set +e
-ls -rt *solverstate 2>/dev/null 1>&2
-if [ "$?" = "0" ]; then
+lastfile=`ls -rt *solverstate 2>/dev/null | tail -n 1`
+if [ "$lastfile" = "" ]; then
+    echo "Starting training from scratch"
+else
     lastfile=`ls -rt *solverstate | tail -n 1`
     echo "Resuming training from file: $lastfile"
     echo "-------------------------------------------------"
-    GLOG_logtostderr=1 time ./train_net.bin imagenet_solver.prototxt $lastfile 2>&1
-    code="$?"
-else
-    echo "Starting training from scratch"
+fi
+
+try=1
+set +e       # Don't exit immediately on errors
+while : ; do
+    echo "Attempt number: $try"
     echo "-------------------------------------------------"
     GLOG_logtostderr=1 time ./train_net.bin imagenet_solver.prototxt $lastfile 2>&1
     code="$?"
-fi
-
+    [ "$code" = "0" ] && break
+    timeout=$(($try*5))
+    echo "Failed with code $code, sleeping for $timeout..."
+    sleep $timeout
+    echo 
+    echo
+    if [ "$try" = "10" ]; then
+        subj="Failed $try times at job `cat jobname`"
+        ssh mmmlog3 mailj "$subj"
+        echo "Sent mail; giving up"
+        break
+    fi
+    try=$((try+1))
+done
 
 
 echo "-------------------------------------------------"
-echo "Finished (exit code: $code)."
+echo "Finished (last exit code: $code)."
