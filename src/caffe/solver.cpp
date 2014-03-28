@@ -57,10 +57,19 @@ void Solver<Dtype>::Solve(const char* resume_file) {
   // should be given, and we will just provide dummy vecs.
   vector<Blob<Dtype>*> bottom_vec;
   while (iter_++ < param_.max_iter()) {
+    // JBY: special save at iteration 0
+    if (iter_ == 1 && !resume_file) {
+      LOG(INFO) << "Taking special snapshot at iter 0";
+      iter_--;
+      Snapshot();
+      iter_++;
+    }
+
     Dtype loss = net_->ForwardBackward(bottom_vec);
     ComputeUpdateValue();
     net_->Update();
 
+    //LOG(INFO) << "in loop iter_ is " << iter_;
     if (param_.display() && iter_ % param_.display() == 0) {
       LOG(INFO) << "Iteration " << iter_ << ", loss = " << loss;
     }

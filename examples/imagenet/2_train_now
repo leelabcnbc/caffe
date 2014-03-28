@@ -45,7 +45,8 @@ echo
 
 
 # Figure out if we should resume or start fresh
-lastfile=`ls -rt *solverstate 2>/dev/null | tail -n 1`
+#lastfile=`ls -rt *solverstate 2>/dev/null | tail -n 1`
+lastfile=`ls -rt *solverstate 2>/dev/null | tail -n +2 | tail -n 1`  # don't take iter_0 snapshot though
 if [ "$lastfile" = "" ]; then
     echo "Starting training from scratch"
 else
