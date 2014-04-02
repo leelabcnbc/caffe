@@ -51,13 +51,16 @@ Makefile.config
 # 1. reference, and not casually committed
 # 2. custom, and live on their own unless they're deliberated contributed
 models/*
-data/*
+#data/*
+data/cifar10
+data/mnist
 examples/cifar/*
 #examples/imagenet/*
 examples/lenet/*
 
 # JBY
 .DS_Store
+TAGS
 
 # Don't version the generated documentation
 docs/_site
