@@ -6,21 +6,31 @@ from numpy import *
 
 
 
-def makeit(old_idx):
+def makeit(old_idx, in_filename, out_prefix):
+    assert sorted(old_idx) == old_idx, 'Must be in order'
+
     set_old_idx = set(old_idx)
     new_idx = range(len(old_idx))   # New is 0...max
     map_old_to_new = dict(zip(old_idx, new_idx))
     map_new_to_old = dict(zip(new_idx, old_idx))
 
-    read_file = open(filename)
-    write_file = open(write_filename, 'w')
+    in_file = open(in_filename)
+    out_file = open(out_prefix + '.txt', 'w')
 
-    for line in read_file:
+    for line in in_file:
         jpg_file, old_class = line.split()
         old_class = int(old_class)
         if old_class in set_old_idx:
-            new_class = map_new_to_old[old_class]
-            write_file.write('%s %d' % (jpg_file, new_class))
+            new_class = map_old_to_new[old_class]
+            out_file.write('%s %d\n' % (jpg_file, new_class))
+
+    in_file.close()
+    out_file.close()
+
+    with open(out_prefix + '_idxmap.txt', 'w') as ff:
+        ff.write('# Orig_idx new_idx\n')
+        for oo,nn in zip(old_idx, new_idx):
+            ff.write('%d %d\n' % (oo,nn))
 
 
 
@@ -28,8 +38,12 @@ def main():
     parser = argparse.ArgumentParser(description='Creates reduced datasets.')
     #parser.add_argument('--show', action = 'store_true',
     #                    help = 'Show plots as well (default: off)')
-    parser.add_argument('--seed', type = int, nargs=1, default=[0],
+    parser.add_argument('-s', '--seed', type = int, nargs=1, default=[0],
                         help = 'Which seed to use (default: 0)')
+    parser.add_argument('-o', '--outprefix', type = str, default='reduced',
+                        help = 'Prefix of output file, produces PREFIX_A.txt and PREFIX_A_idxmap.txt (default: reduced)')
+    parser.add_argument('infile', type = str,
+                        help = 'Input filename.')
     args = parser.parse_args()
 
 
@@ -42,9 +56,11 @@ def main():
     # FIRST: A/B split!
     idx = arange(1000)   # class indices
     groupAOldIdx = sorted(random.choice(idx, 500, replace=False))
-    groupBOldIdx = sorted(list(set(idx)-set(groupA)))
+    groupBOldIdx = sorted(list(set(idx)-set(groupAOldIdx)))
 
-    makeit(groupAOldIdx)
+    makeit(groupAOldIdx, args.infile, args.outprefix + '_A')
+    makeit(groupBOldIdx, args.infile, args.outprefix + '_B')
+    #makeit(range(1000), args.infile, args.outprefix)
     
 
 

@@ -1,0 +1,27 @@
+#! /bin/bash
+
+smart_ln() {
+    if [ -e "$2" ]; then
+        echo "Desination $2 already exists!"
+        exit 1
+    fi
+
+    rsync -aW --delete --delete-excluded --exclude=*.ldb "$1"/ "$2"/
+    cd "$2"
+    for file in `ls ../$1/*.ldb | head -n -1`; do
+        #echo $file
+        ln -s $file
+    done
+    file=`ls ../$1/*.ldb | tail -n 1`
+    cp -a $file .
+    cd ..
+
+    sleep 2
+    echo "  Linked $2 (~`du -h $2 | awk '{print $1}'`) to $1."
+}
+
+echo "Linking train and val datasets (copying critical bits)..."
+smart_ln imagenet_val_leveldb.pristine   imagenet_val_leveldb
+smart_ln imagenet_train_leveldb.pristine imagenet_train_leveldb
+echo "Done."
+

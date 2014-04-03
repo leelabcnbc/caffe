@@ -23,7 +23,7 @@ mean="$3"
 
 echo "Directory: $dir"
 
-files="../../build/tools/train_net.bin 0_cp_data 1_submit_train 2_train_now imagenet_solver.prototxt imagenet_train.prototxt imagenet_val.prototxt"
+files="../../build/tools/train_net.bin 0_cpln_data 1_submit_train 2_train_now imagenet_solver.prototxt imagenet_train.prototxt imagenet_val.prototxt"
 
 echo
 echo "Copying required files:"
