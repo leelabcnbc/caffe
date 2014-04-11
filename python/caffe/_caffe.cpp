@@ -206,6 +206,55 @@ struct CaffeNet {
     }
   }
 
+  // JBY: added
+  // Forward through part of the network. Otherwise like Forward.
+  void ForwardPartial(list bottom_partial, list top_partial, int layer_start, int layer_end) {
+    //vector<Blob<float>*>& input_blobs_partial = net_->input_blobs();
+    vector<Blob<float>*>& input_blobs_partial = net_->bottom_vecs()[layer_start];
+    CHECK_EQ(len(bottom_partial), input_blobs_partial.size());
+    CHECK_EQ(len(top_partial), net_->top_vecs()[layer_end-1].size());
+    // First, copy the input
+    for (int i = 0; i < input_blobs_partial.size(); ++i) {
+      object elem = bottom_partial[i];
+      PyArrayObject* arr = reinterpret_cast<PyArrayObject*>(elem.ptr());
+      check_array_against_blob(arr, input_blobs_partial[i]);
+      switch (Caffe::mode()) {
+      case Caffe::CPU:
+        memcpy(input_blobs_partial[i]->mutable_cpu_data(), PyArray_DATA(arr),
+            sizeof(float) * input_blobs_partial[i]->count());
+        break;
+      case Caffe::GPU:
+        cudaMemcpy(input_blobs_partial[i]->mutable_gpu_data(), PyArray_DATA(arr),
+            sizeof(float) * input_blobs_partial[i]->count(), cudaMemcpyHostToDevice);
+        break;
+      default:
+        LOG(FATAL) << "Unknown Caffe mode.";
+      }  // switch (Caffe::mode())
+    }
+    LOG(INFO) << "*** Start";
+    const vector<Blob<float>*>& output_blobs_partial = net_->ForwardPrefilledPartial(layer_start, layer_end);
+    LOG(INFO) << "*** End";
+    for (int i = 0; i < output_blobs_partial.size(); ++i) {
+      object elem = top_partial[i];
+      PyArrayObject* arr = reinterpret_cast<PyArrayObject*>(elem.ptr());
+      check_array_against_blob(arr, output_blobs_partial[i]);
+      switch (Caffe::mode()) {
+      case Caffe::CPU:
+        memcpy(PyArray_DATA(arr), output_blobs_partial[i]->cpu_data(),
+            sizeof(float) * output_blobs_partial[i]->count());
+        break;
+      case Caffe::GPU:
+        cudaMemcpy(PyArray_DATA(arr), output_blobs_partial[i]->gpu_data(),
+            sizeof(float) * output_blobs_partial[i]->count(), cudaMemcpyDeviceToHost);
+        break;
+      default:
+        LOG(FATAL) << "Unknown Caffe mode.";
+      }  // switch (Caffe::mode())
+    }
+  }
+  // JBY: added
+
+  // JBY: HERE: Do BackwardPartial
   void Backward(list top_diff, list bottom_diff) {
     vector<Blob<float>*>& output_blobs = net_->output_blobs();
     vector<Blob<float>*>& input_blobs = net_->input_blobs();
@@ -289,6 +338,7 @@ BOOST_PYTHON_MODULE(_caffe) {
   boost::python::class_<CaffeNet>(
       "CaffeNet", boost::python::init<string, string>())
       .def("Forward",          &CaffeNet::Forward)
+      .def("ForwardPartial",   &CaffeNet::ForwardPartial)
       .def("ForwardPrefilled", &CaffeNet::ForwardPrefilled)
       .def("Backward",         &CaffeNet::Backward)
       .def("set_mode_cpu",     &CaffeNet::set_mode_cpu)

@@ -32,6 +32,12 @@ class Net {
   // Run forward with the input blobs already fed separately. You can get the
   // input blobs using input_blobs().
   const vector<Blob<Dtype>*>& ForwardPrefilled();
+
+  // JBY: added
+  // Like ForwardPrefilled, but only from layer_start to layer_end
+  const vector<Blob<Dtype>*>& ForwardPrefilledPartial(int layer_start, int layer_end);
+  // JBY: added
+
   // Run forward using a set of bottom blobs, and return the result.
   const vector<Blob<Dtype>*>& Forward(const vector<Blob<Dtype>* > & bottom);
   // Run forward using a serialized BlobProtoVector and return the result

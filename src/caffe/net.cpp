@@ -215,6 +215,23 @@ const vector<Blob<Dtype>*>& Net<Dtype>::ForwardPrefilled() {
   return net_output_blobs_;
 }
 
+
+// JBY: added
+template <typename Dtype>
+const vector<Blob<Dtype>*>& Net<Dtype>::ForwardPrefilledPartial(int layer_start, int layer_end) {
+  CHECK_GE(layer_start, 0);
+  CHECK_GE(layer_end, 0);
+  CHECK_LT(layer_start, layers_.size());
+  CHECK_LE(layer_end, layers_.size());
+  for (int i = layer_start; i < layer_end; ++i) {
+    LOG(ERROR) << "*** Forwarding " << layer_names_[i];
+    layers_[i]->Forward(bottom_vecs_[i], &top_vecs_[i]);
+  }
+  return top_vecs_[layer_end-1];
+}
+// JBY: added
+
+
 template <typename Dtype>
 const vector<Blob<Dtype>*>& Net<Dtype>::Forward(
     const vector<Blob<Dtype>*> & bottom) {
