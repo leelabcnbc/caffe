@@ -78,15 +78,11 @@ def convert_dict(dd):
 
 
 
-def main():
-    parser = argparse.ArgumentParser(description='Plots performance given one or more logfiles.')
-    parser.add_argument('--show', action = 'store_true',
-                        help = 'Show plots as well (default: off)')
-    parser.add_argument('logfiles', type = str, nargs='+',
-                        help = 'Log file(s) to scrape for performance numbers')
-    args = parser.parse_args()
 
-    dicts = read_info(args.logfiles)
+
+def plot_perf(logfiles):
+    dicts = read_info(logfiles)
+
     arrays = [convert_dict(dd) for dd in dicts]
     #loss_train, lr, test_score_0, test_score_1 = dicts
 
@@ -159,6 +155,18 @@ def main():
 
     savefig('plot_zoom.pdf')
 
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Plots performance given one or more logfiles.')
+    parser.add_argument('--show', action = 'store_true',
+                        help = 'Show plots as well (default: off)')
+    parser.add_argument('logfiles', type = str, nargs='+',
+                        help = 'Log file(s) to scrape for performance numbers')
+    args = parser.parse_args()
+
+    plot_perf(args.logfiles)
+    
     if args.show:
         show()
         from IPython import embed
