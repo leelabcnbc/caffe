@@ -1,0 +1,19 @@
+#! /bin/bash
+
+#Exit on errors
+set -e
+
+if [ "$2" = "" ]; then
+    echo "Usage: `basename $0` <jobname> <dir prefix>"
+    echo "Example:"
+    echo "  `basename $0` 225828 140228_120642"
+    exit 1
+fi
+
+set -x
+qdel "$1"
+cd "${2}"*
+./1_submit_train
+cd -
+
+qstat -u `whoami` | egrep --color "$|$1|$2"

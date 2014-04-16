@@ -1,0 +1,60 @@
+#! /bin/bash
+
+# Almost the same as create_run_dir_fresh, but we add a symlink to the base directory as well
+
+# Exit on errors
+set -e
+
+if [ "$GIT_RESULTS_MANAGER_DIR" = "" ]; then
+    echo "You must run this from within GitResultsManager, something like this:"
+    echo "   resman `basename $0`"
+    exit 1
+fi
+
+dir="$GIT_RESULTS_MANAGER_DIR"
+
+if [ "$1" = "" -o "$2" = "" -o "$3" = "" -o "$4" = "" ]; then
+    echo "You must provide four arguments: traindb valdb meanfile basenetdir, something like this:"
+    echo "   resman `basename $0` imagenet_train_leveldb imagenet_val_leveldb ../../data/ilsvrc12/FETCHED_imagenet_mean.binaryproto results/140403_063910_1293595_priv_half0A"
+    exit 1
+fi
+
+train_leveldb="$1"
+val_leveldb="$2"
+mean="$3"
+basenet_dir="$4"
+
+echo "Directory: $dir"
+
+files="../../build/tools/train_net.bin ../../build/tools/finetune_net.bin 0_cpln_data 1_submit_train 2_train_now imagenet_solver.prototxt imagenet_train.prototxt imagenet_val.prototxt"
+
+echo
+echo "Copying required files:"
+for file in $files; do
+    echo -n "  "
+    cp -v $file $dir/
+done
+echo -n "  "
+cp -v "$mean" $dir/imagenet_mean.binaryproto
+
+#echo
+#echo "Hardlinking train and val leveldbs:"
+#echo -n "  "
+#ln -sv "`pwd`/$train_leveldb" $dir/imagenet_train_leveldb
+#echo -n "  "
+#ln -sv "`pwd`/$val_leveldb" $dir/imagenet_val_leveldb
+
+echo "Linking train and val leveldbs:"
+echo -n "  "
+ln -sv "`pwd`/$train_leveldb" $dir/imagenet_train_leveldb.pristine
+echo -n "  "
+ln -sv "`pwd`/$val_leveldb" $dir/imagenet_val_leveldb.pristine
+
+echo "Linking basenet:"
+echo -n "  "
+ln -sv "`pwd`/$basenet_dir" $dir/basenet
+
+jobname="`basename \"$dir\" | gawk -F _ '{print $1 \"_\" $2 \"_\" $5}'`"
+echo "$jobname" > $dir/jobname
+
+echo -e "\n\nNext step: cd $dir and make sure data is in place, then run ./1_submit_train"

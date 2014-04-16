@@ -44,24 +44,55 @@ env | sed 's/^/    /g'
 echo
 
 
-# Figure out if we should resume or start fresh
-#lastfile=`ls -rt *solverstate 2>/dev/null | tail -n 1`
+# FIRST: Figure out if we're supposed to be fine-tuning or not:
+finetune_base_net_file=`ls -rt basenet/caffe_imagenet_train_iter_*[0-9] 2>/dev/null | tail -n 1`  # Take latest previous, even iter_0
+if [ "$finetune_base_net_file" = "" ]; then
+    echo "Fine-tuning: We are not fine-tuning another network."
+else
+    echo "Fine-tuning: We are fine-tuning another network."
+    echo "Fine-tuning: Base network file (only used if traing from scratch): $finetune_base_net_file"
+fi
+
+# SECOND: Figure out if we should resume or start fresh, regardless of whether we're fine-tuning or not
 lastfile=`ls -rt *solverstate 2>/dev/null | tail -n +2 | tail -n 1`  # don't take iter_0 snapshot though
 if [ "$lastfile" = "" ]; then
     echo "Starting training from scratch"
 else
-    lastfile=`ls -rt *solverstate | tail -n 1`
     echo "Resuming training from file: $lastfile"
-    echo "-------------------------------------------------"
 fi
+
 
 try=1
 set +e       # Don't exit immediately on errors
 while : ; do
     echo "Attempt number: $try"
     echo "-------------------------------------------------"
-    GLOG_logtostderr=1 time ./train_net.bin imagenet_solver.prototxt $lastfile 2>&1
-    code="$?"
+
+    if [ "$finetune_base_net_file" = "" ]; then
+        if [ "$lastfile" = "" ]; then
+            echo "Fine-tuning: no. Resuming: no"
+        else
+            echo "Fine-tuning: no. Resuming: yes"
+        fi
+        # same command for both because lastfile could be blank
+        GLOG_logtostderr=1 time ./train_net.bin imagenet_solver.prototxt $lastfile 2>&1
+        code="$?"
+    else
+        if [ "$lastfile" = "" ]; then
+            echo "Fine-tuning: yes. Resuming: no"
+            GLOG_logtostderr=1 time ./finetune_net.bin imagenet_solver.prototxt $finetune_base_net_file 2>&1
+            code="$?"
+        else
+            echo "Fine-tuning: yes. Resuming: yes"
+            # In this case we don't use ./finetune_net.bin or the
+            # finetune_base_net_file, because we're resuming a
+            # previous fine-tune run, so we just need the
+            # *.solverstate file
+            GLOG_logtostderr=1 time ./train_net.bin imagenet_solver.prototxt $lastfile 2>&1
+            code="$?"
+        fi
+    fi
+
     [ "$code" = "0" ] && break
     timeout=$(($try*5))
     echo "Failed with code $code, sleeping for $timeout..."
