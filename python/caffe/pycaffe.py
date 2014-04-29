@@ -60,3 +60,29 @@ class Net(CaffeNet):
         self.ForwardPartial([input_data], [output_blob], input_idx, output_idx)
 
         return output_blob
+
+    def BackwardFrom(self, input_layer, output_layer, input_data):
+        """
+        Set the layer with name input_layer to input_data, do a
+        backward pass to the layer with name output_layer, and return
+        the diff at that output of that layer. input_data must be the correct
+        shape.
+        """
+
+        input_idx = self.complete_layers.index(input_layer)
+        output_idx = self.complete_layers.index(output_layer)
+
+        shape_ref = output_layer
+        try:
+            out_blob = self.blobs[shape_ref]
+        except KeyError:
+            raise Exception('Cannot figure out the output shape from layer '
+                            '%s. Instead, modify this functino and provide a '
+                            'shape_ref that exists in'
+                            ' .blobs, i.e. one of these: %s)' % (shape_ref, self.blobs))
+        output_blob = np.zeros(out_blob.data.shape, dtype=np.float32)
+
+        #print '***p ', 'input_idx', input_idx, 'output_idx', output_idx
+        self.BackwardPartial([input_data], [output_blob], input_idx, output_idx)
+
+        return output_blob

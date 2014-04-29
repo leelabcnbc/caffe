@@ -49,6 +49,11 @@ class Net {
   // been provided during the forward pass.
   Dtype Backward();
 
+  // JBY: added
+  // Like Backward, but only from layer_start to layer_end
+  Dtype BackwardPartial(int layer_start, int layer_end);
+  // JBY: added
+
   Dtype ForwardBackward(const vector<Blob<Dtype>* > & bottom) {
     Forward(bottom);
     return Backward();

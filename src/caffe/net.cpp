@@ -270,6 +270,7 @@ Dtype Net<Dtype>::Backward() {
   Dtype loss = 0;
   for (int i = layers_.size() - 1; i >= 0; --i) {
     if (layer_need_backward_[i]) {
+      LOG(ERROR) << "*** Backwarding " << layer_names_[i];
       Dtype layer_loss = layers_[i]->Backward(
           top_vecs_[i], true, &bottom_vecs_[i]);
       loss += layer_loss;
@@ -277,6 +278,26 @@ Dtype Net<Dtype>::Backward() {
   }
   return loss;
 }
+
+// JBY: added
+template <typename Dtype>
+Dtype Net<Dtype>::BackwardPartial(int layer_start, int layer_end) {
+  CHECK_GE(layer_start, 0);
+  CHECK_GE(layer_end, 0);
+  CHECK_LE(layer_start, layers_.size());
+  CHECK_LE(layer_end, layers_.size());
+  Dtype loss = 0;
+  for (int i = layer_start - 1; i >= layer_end; --i) {
+    if (layer_need_backward_[i]) {
+      LOG(ERROR) << "*** Backwarding " << layer_names_[i];
+      Dtype layer_loss = layers_[i]->Backward(
+          top_vecs_[i], true, &bottom_vecs_[i]);
+      loss += layer_loss;
+    }
+  }
+  return loss;
+}
+// JBY: added
 
 template <typename Dtype>
 void Net<Dtype>::CopyTrainedLayersFrom(const NetParameter& param) {
