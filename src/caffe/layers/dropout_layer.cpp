@@ -45,16 +45,34 @@ template <typename Dtype>
 Dtype DropoutLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
     const bool propagate_down,
     vector<Blob<Dtype>*>* bottom) {
-  CHECK(Caffe::phase() == Caffe::TRAIN);
+  // JBY: Changed to allow backprop during test phase
+  // OLD:
+  // CHECK(Caffe::phase() == Caffe::TRAIN);
+  // if (propagate_down) {
+  //   const Dtype* top_diff = top[0]->cpu_diff();
+  //   Dtype* bottom_diff = (*bottom)[0]->mutable_cpu_diff();
+  //   const int* mask = reinterpret_cast<const int*>(rand_vec_->cpu_data());
+  //   const int count = (*bottom)[0]->count();
+  //   for (int i = 0; i < count; ++i) {
+  //     bottom_diff[i] = top_diff[i] * mask[i] * scale_;
+  //   }
+  // }
+  // NEW:
+  CHECK(Caffe::phase() == Caffe::TRAIN || Caffe::phase() == Caffe::TEST);
   if (propagate_down) {
     const Dtype* top_diff = top[0]->cpu_diff();
     Dtype* bottom_diff = (*bottom)[0]->mutable_cpu_diff();
     const int* mask = reinterpret_cast<const int*>(rand_vec_->cpu_data());
     const int count = (*bottom)[0]->count();
-    for (int i = 0; i < count; ++i) {
-      bottom_diff[i] = top_diff[i] * mask[i] * scale_;
+    if (Caffe::phase() == Caffe::TRAIN) {
+      for (int i = 0; i < count; ++i) {
+        bottom_diff[i] = top_diff[i] * mask[i] * scale_;
+      }
+    } else {
+      memcpy(bottom_diff, top_diff, top[0]->count() * sizeof(Dtype));
     }
   }
+  // JBY: Changed
   return Dtype(0);
 }
 
