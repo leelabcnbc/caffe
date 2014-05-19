@@ -1,0 +1,9 @@
+[2014-05-19 11:46:22 am] 
+for dir in `cat torun`; do echo -e "$dir \t `ls -rt results/$dir*/*solverstate | tail -n 1`"; done
+for dir in `cat torun`; do echo -e "$dir \t `ls -v  results/$dir*/*solverstate | tail -n 1`"; done
+
+
+qstat -u jyosinsk > tobump
+for job in `cat todel | gawk '{print $1}'`; do qdel $job; done
+for job in `cat tobump | gawk '{print $1}'`; do qdel $job; done
+for dir in `cat tobump | gawk '{print $4}' | egrep -o '([0-9]+_)*'`; do cd results/$dir*; ./1_submit_train; cd -; done
