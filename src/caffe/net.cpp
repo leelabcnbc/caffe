@@ -270,7 +270,7 @@ Dtype Net<Dtype>::Backward() {
   Dtype loss = 0;
   for (int i = layers_.size() - 1; i >= 0; --i) {
     if (layer_need_backward_[i]) {
-      LOG(ERROR) << "*** Backwarding " << layer_names_[i];
+      //LOG(ERROR) << "*** Backwarding " << layer_names_[i];
       Dtype layer_loss = layers_[i]->Backward(
           top_vecs_[i], true, &bottom_vecs_[i]);
       loss += layer_loss;
@@ -289,7 +289,7 @@ Dtype Net<Dtype>::BackwardPartial(int layer_start, int layer_end) {
   Dtype loss = 0;
   for (int i = layer_start - 1; i >= layer_end; --i) {
     if (layer_need_backward_[i]) {
-      LOG(ERROR) << "*** Backwarding " << layer_names_[i];
+      //LOG(ERROR) << "*** Backwarding " << layer_names_[i];
       Dtype layer_loss = layers_[i]->Backward(
           top_vecs_[i], true, &bottom_vecs_[i]);
       loss += layer_loss;

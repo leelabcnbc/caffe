@@ -1,8 +1,10 @@
 #! /bin/bash
 
-
 echo 'Do not run this! This is just a place to copy and paste commands that have been used to start experiments'
 exit 1
+
+
+
 
 
 ##########################
@@ -45,6 +47,7 @@ perl -p -i -e 's/conv5/conv5-new/g' results/*transfer*_1_[1-4]/imagenet_{train,v
 perl -p -i -e 's/fc6/fc6-new/g'     results/*transfer*_1_[1-5]/imagenet_{train,val}.prototxt
 perl -p -i -e 's/fc7/fc7-new/g'     results/*transfer*_1_[1-6]/imagenet_{train,val}.prototxt
 perl -p -i -e 's/fc8/fc8-new/g'     results/*transfer*_1_[1-7]/imagenet_{train,val}.prototxt
+
 
 
 

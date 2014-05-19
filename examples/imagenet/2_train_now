@@ -45,7 +45,7 @@ echo
 
 
 # FIRST: Figure out if we're supposed to be fine-tuning or not:
-finetune_base_net_file=`ls -rt basenet/caffe_imagenet_train_iter_*[0-9] 2>/dev/null | tail -n 1`  # Take latest previous, even iter_0
+finetune_base_net_file=`ls -v basenet/caffe_imagenet_train_iter_*[0-9] 2>/dev/null | tail -n 1`  # Take latest previous, even iter_0
 if [ "$finetune_base_net_file" = "" ]; then
     echo "Fine-tuning: We are not fine-tuning another network."
 else
@@ -54,7 +54,7 @@ else
 fi
 
 # SECOND: Figure out if we should resume or start fresh, regardless of whether we're fine-tuning or not
-lastfile=`ls -rt *solverstate 2>/dev/null | tail -n +2 | tail -n 1`  # don't take iter_0 snapshot though
+lastfile=`ls -v *solverstate 2>/dev/null | tail -n +2 | tail -n 1`  # don't take iter_0 snapshot though
 if [ "$lastfile" = "" ]; then
     echo "Starting training from scratch"
 else
@@ -111,3 +111,8 @@ done
 
 echo "-------------------------------------------------"
 echo "Finished (last exit code: $code)."
+
+
+subj="Job `cat jobname` finished with exit code $code"
+ssh mmmlog3 mailj "$subj"
+echo "Sent mail; done."

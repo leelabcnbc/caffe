@@ -4,7 +4,13 @@ jobname="`cat jobname`"
 if [ "$jobname" = "" ]; then jobname="unnamed"; fi
 scriptdir="`dirname $0`"
 
-qsub -N "$jobname" -A EvolvingAI -l nodes=1:ppn=4:gpus=1:k20 -l walltime=168:00:00 -d "$scriptdir" ./2_train_now
+if [ "$1" = "" ]; then
+    time="168:00:00"
+else
+    time="$1"
+fi
+
+qsub -N "$jobname" -A EvolvingAI -l nodes=1:ppn=4:gpus=1:k20 -l walltime="$time" -d "$scriptdir" ./2_train_now
 
 sleep 1
 qstat -u `whoami`
