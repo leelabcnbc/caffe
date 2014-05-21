@@ -1,0 +1,68 @@
+n  n13133613 ear, spike, capitulum
+x  n07697537 hotdog, hot dog, red hot
+n  n07745940 strawberry
+x  n07860988 dough
+x  n07875152 potpie
+n  n07714571 head cabbage
+n  n09428293 seashore, coast, seacoast, sea-coast
+n  n07753113 fig
+x  n07583066 guacamole
+n  n07753275 pineapple, ananas
+x  n07892512 red wine
+n  n07730033 cardoon
+x  n07614500 ice cream, icecream
+x  n09229709 bubble
+n  n07749582 lemon
+x  n07831146 carbonara
+n  n07742313 Granny Smith
+n  n12768682 buckeye, horse chestnut, conker
+n  n07734744 mushroom
+n  n09246464 cliff, drop, drop-off
+x  n07565083 menu
+x  n07871810 meat loaf, meatloaf
+x  n07693725 bagel, beigel
+x  n07920052 espresso
+n  n11879895 rapeseed
+n  n07718472 cucumber, cuke
+n  n09468604 valley, vale
+n  n07802026 hay
+n  n09288635 geyser
+n  n07720875 bell pepper
+x  n07590611 hot pot, hotpot
+x  n07873807 pizza, pizza pie
+n  n07760859 custard apple
+x  n07579787 plate
+x  n06874185 traffic light, traffic signal, stoplight
+n  n07716358 zucchini, courgette
+n  n09332890 lakeside, lakeshore
+x  n07836838 chocolate sauce, chocolate syrup
+x  n15075141 toilet tissue, toilet paper, bathroom tissue
+n  n09193705 alp
+n  n09399592 promontory, headland, head, foreland
+x  n07613480 trifle
+x  n07880968 burrito
+n  n07717410 acorn squash
+x  n06794110 street sign
+n  n07717556 butternut squash
+n  n07714990 broccoli
+n  n09256479 coral reef
+n  n09472597 volcano
+n  n07747607 orange
+n  n07716906 spaghetti squash
+x  n07711569 mashed potato
+x  n07932039 eggnog
+x  n07695742 pretzel
+x  n07684084 French loaf
+n  n12620546 hip, rose hip, rosehip
+n  n07768694 pomegranate
+n  n12267677 acorn
+n  n12144580 corn
+x  n07697313 cheeseburger
+x  n07615774 ice lolly, lolly, lollipop, popsicle
+x  n07584110 consomme
+x  n07930864 cup
+n  n07718747 artichoke, globe artichoke
+n  n07753592 banana
+n  n09421951 sandbar, sand bar
+n  n07715103 cauliflower
+n  n07754684 jackfruit, jak, jack
