@@ -42,21 +42,30 @@ def main():
                         help = 'Which seed to use (default: 0)')
     parser.add_argument('-o', '--outprefix', type = str, default='reduced',
                         help = 'Prefix of output file, produces PREFIX_A.txt and PREFIX_A_idxmap.txt (default: reduced)')
+    parser.add_argument('-hf', '--half-files', type = str, nargs=2,
+                        help = 'Use the given input file instead of randomly shuffling files (default: off)')
     parser.add_argument('infile', type = str,
                         help = 'Input filename.')
     args = parser.parse_args()
 
+    if args.half_files:
+        print 'Using half files', args.half_files
+        with open(args.half_files[0]) as ff:
+            groupAOldIdx = sorted([int(line.strip()) for line in ff])
+        with open(args.half_files[1]) as ff:
+            groupBOldIdx = sorted([int(line.strip()) for line in ff])
+        allOldIdx = sorted(groupAOldIdx + groupBOldIdx)
+        assert allOldIdx == range(1000), 'missing some indices; expected range(1000) but got %s' % repr(allOldIdx)
+    else:
+        print 'Randomly splitting with seed', args.seed[0]
 
-    print 'seed is', args.seed[0]
+        random.seed(args.seed)
 
-    random.seed(args.seed)
-
-
+        # FIRST: A/B split!
+        idx = arange(1000)   # class indices
+        groupAOldIdx = sorted(random.choice(idx, 500, replace=False))
+        groupBOldIdx = sorted(list(set(idx)-set(groupAOldIdx)))
     
-    # FIRST: A/B split!
-    idx = arange(1000)   # class indices
-    groupAOldIdx = sorted(random.choice(idx, 500, replace=False))
-    groupBOldIdx = sorted(list(set(idx)-set(groupAOldIdx)))
 
     makeit(groupAOldIdx, args.infile, args.outprefix + '_A')
     makeit(groupBOldIdx, args.infile, args.outprefix + '_B')
