@@ -20,14 +20,17 @@ submit ()
     sleep 1.5
 }
 
-create_tvt half0A
-create_tvt half0B
-create_tvt half1A
-create_tvt half1B
-create_tvt half2A
-create_tvt half2B
-create_tvt half3A
-create_tvt half3B
+# Done
+#create_tvt half0A
+#create_tvt half0B
+#create_tvt half1A
+#create_tvt half1B
+#create_tvt half2A
+#create_tvt half2B
+#create_tvt half3A
+#create_tvt half3B
+
+# Skipped for now
 #create_tvt half4A
 #create_tvt half4B
 #create_tvt half5A
@@ -40,3 +43,7 @@ create_tvt half3B
 #create_tvt half8B
 #create_tvt half9A
 #create_tvt half9B
+
+# Done
+#create_tvt halfnatmanA
+#create_tvt halfnatmanB
