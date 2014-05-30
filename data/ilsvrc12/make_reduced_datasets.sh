@@ -48,7 +48,16 @@ make_half_from_files_tvt ()
     make_half_from_files "$1" "$2" "$3" test
 }
 
+make_reduced ()
+{
+    number="$1"
+    tvt="$2"
+    ./make_reduced_dataset.py --perclass "$number" data/whole_${tvt}/files.txt
+    mkdir -p data/reduced${number}_${tvt}
+    mv reduced.txt        data/reduced${number}_${tvt}/files.txt
+}
 
+# Random split datasets
 #make_half_tvt 0
 #make_half_tvt 1
 #make_half_tvt 2
@@ -60,4 +69,18 @@ make_half_from_files_tvt ()
 #make_half_tvt 8
 #make_half_tvt 9
 
+# Natural vs. Manmade split datasets
 #make_half_from_files_tvt data/half_nat_idx.dat data/half_man_idx.dat natman
+
+# Reduced size Datasets
+#make_reduced 1000 train
+#make_reduced 0750 train
+#make_reduced 0500 train
+#make_reduced 0250 train
+#make_reduced 0100 train
+#make_reduced 0050 train
+#make_reduced 0025 train
+#make_reduced 0010 train
+#make_reduced 0005 train
+#make_reduced 0002 train
+#make_reduced 0001 train

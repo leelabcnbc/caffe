@@ -8,6 +8,11 @@ create_tvt ()
     submit GLOG_logtostderr=1 ../../build/tools/convert_imageset.bin $HOME/imagenet2012/test/  data/${1}_test/files.txt data/${1}_test/leveldb 1
 }
 
+create_train ()
+{
+    submit GLOG_logtostderr=1 ../../build/tools/convert_imageset.bin $HOME/imagenet2012/train/ data/${1}_train/files.txt data/${1}_train/leveldb 1
+}
+
 submit ()
 {
     #echo "got: $@"
@@ -47,3 +52,16 @@ submit ()
 # Done
 #create_tvt halfnatmanA
 #create_tvt halfnatmanB
+
+# Done
+#create_train reduced0001
+#create_train reduced0002
+#create_train reduced0005
+#create_train reduced0010
+#create_train reduced0025
+#create_train reduced0050
+#create_train reduced0100
+#create_train reduced0250
+#create_train reduced0500
+#create_train reduced0750
+#create_train reduced1000
