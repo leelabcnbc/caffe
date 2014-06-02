@@ -1,0 +1,228 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\froman\fcharset0 Times-Roman;\f2\fswiss\fcharset0 ArialMT;
+}
+{\colortbl;\red255\green255\blue255;}
+\margl1440\margr1440\vieww17360\viewh16300\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\f0\fs36 \cf0 Hey Lisa labo,\
+\
+I wanted to share an experiment I've been running to see what you guys think.\
+\
+We (ML folks) have recently had good luck training large hierarchical models for vision, on a few different data sets and with a few different network models.\
+\
+Assumption 1: The first layer often converges to gabor-like features not just for a single \{network model, dataset\} combination, but for many combinations of the two. In this sense, let's call the layer 1 gabor features "generic".\
+\
+Assumption 2: On the other hand, the last layer of a network will depend greatly on the \{network model, dataset\} combination. For example, for networks trained toward a supervised classification objective, each output unit will be specific to a particular class (to the extent that training is successful). In this sense, let's call the last layer features "specific"\
+\
+From A1 and A2 we know there must be a transition at some point from generic to specific.\
+\
+This raises the following questions: in a given deep network, where does this transition take place? Is it a sudden transition from layer n to n+1, or is it spread over several layers? More fundamentally, how should we even quantify the degree of specificity?\
+\
+I took a stab at answering some of these questions for a particular \{model, dataset\} combination: an eight layer Alex-style convnet trained on Imagenet. Others have loosely addressed this question by showing how features from layers 5/6/7 can be transferred to new tasks [1], but here I'm aiming for something slightly different: to observe the generic -> specific transition more directly, if possible.\
+\
+Method:\
+\
+The approach is fairly simple: I randomly split the 1000 classes in the Imagenet (ILSVRC 2012) data set into two groups, A and B, each containing 500 classes. Then I separately trained two networks, baseA and baseB, to classify examples from group A or B. The layer sizes are as in Alex's paper except for the softmax layer, which outputs 500 instead of 1000 units. Training was done in Caffe.\
+\
+Once baseA and baseB were trained, I created a new network with the first layer weights copied from baseA and frozen and the rest of the weights randomly initialized and then trained this to classify dataset B. Let's call this network transferA1B.\
+\
+The intuition is that if transferA1B performs as well as baseB, then the layer 1 features in baseA may be regarded as generic. If performance suffers, then the features must have been somewhat specific to dataset A.\
+\
+I repeated this process for all layers to create transferA1B, transferA2B, \'85, transferA7B, where for transferANB we copy and freeze layers 1, 2, \'85 N and then train the rest toward B. (And similarly for B1A, B2A, etc\'85). Here's how well it worked:\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+
+\fs24 \cf0 {{\NeXTGraphic plot1.png \width14464 \height9882
+}¬}\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+
+\fs36 \cf0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+\cf0 \
+Each dot is the average accuracy over the validation set for an entire network. The black dots represent the accuracy of baseA and baseB (there are more than two points because I made a few random splits). Each red dot represents a network where the first N layers were from baseA and the last 8-N layers were reinitialized and trained toward dataset B (multiple points from multiple random splits).\
+\
+So what can we conclude from these results?\
+\
+ - The first four layers are almost 100% generic (for a certain definition of generic*)\
+\
+ - The rest of the layers are all surprisingly generic too. Even the networks in column 7, in which only the final 500-way softmax layer is retrained to the new dataset, suffer only an 8% accuracy drop.\
+\
+What do you guys think so far?\
+\
+jason\
+\
+\
+\
+\
+\
+ - There's some curious behavior with layers 5 and 6. Why would the accuracy be worse (even slightly) on layer 5 than 6 (?!??)\
+\
+\
+\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+
+\fs24 \cf0 {{\NeXTGraphic plot2.png \width14464 \height9882
+}¬}
+\fs36 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+\cf0 \
+\
+ different which are completely trained for a different split except for the final softmax layer, \
+\
+\
+\
+\
+how many layers are generic vs. specific?  Does the transition Is the transition from generic to specific smooth or abrupt? Does it \
+\
+clearly be "specific", i\
+\
+ and dataset, but with many combinations of the two.\
+\
+This suggests that the gabor features on layer 1 are *generic*.\
+\
+On the other hand, we know that for a specific combination of \{network architecture, dataset, loss\}, the \
+\
+ models with hierarchical features for vision. Quoc's work with TICA, Alex's with supervised convnets, etc.\
+\
+for Any number of recent deep learnign methods have showed \
+\
+\
+\
+lisa email about transfer\
+\
+\
+What follow up questions would you have? What would you add to this experiment? (for paper)\
+\
+jason\
+\
+\
+[1] Jeff Donahue, Yangqing Jia, Oriol Vinyals, Judy Hoffman, Ning Zhang, Eric Tzeng, Trevor Darrell, "DeCAF: A Deep Convolutional Activation Feature for Generic Visual Recognition"\
+\
+* We actually have to be careful here. These results only show that a random split of half of ImageNet transfers / generalizes to the other half. However, there are many related classes in the dataset. For example, here are 13 felids:\
+   n02123045 tabby, tabby cat\
+   n02123159 tiger cat\
+   n02123394 Persian cat\
+   n02123597 Siamese cat, Siamese\
+   n02124075 Egyptian cat\
+   n02125311 cougar, puma, catamount, mountain lion, Felis concolor\
+   n02127052 lynx, catamount\
+   n02128385 leopard, Panthera pardus\
+   n02128757 snow leopard, ounce, Panthera uncia\
+   n02128925 jaguar, panther, Panthera onca, Felis onca\
+   n02129165 lion, king of beasts, Panthera leo\
+   n02129604 tiger, Panthera tigris\
+   n02130308 cheetah, chetah, Acinonyx jubatus\
+Because each A/B half will probably contain 6 or 7 of these, each half will have detectors trained on all levels to classify some types of felids. When generalizing to the other half, we would expect that the new high-level felid detectors trained on top of fixed old low-level felid detectors would work well. With this in mind, I've made a special manual 449-class vs 515-class split of the dataset into "natural" and "man made" categories to show how mid-level features do or do not transfer across this larger generalization gap (experiments still running).\
+\
+\
+\
+generalize perfectly or almost perfectly to a different set of 500 classes.\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+RE\
+\
+\pard\pardeftab720
+
+\f1\fs24 \cf0 I did similar experiment, but I was using a sub class with cat and dog, which contains 101 classes. What I found is when data is enough like using ImageNet data, those transfer will not help in classification, the net will soon dropped into \'a0a bad local minium.\
+\
+But when the data is not enough (like using kaggle cat and dog experiment), these transfer will be meaningful and greatly smooth the training curve and achieve better classification result. Even I use exactly same pretrained net with 1000 output but just 0 and 1 is active, after 40 epoch I can get state of art result.\
+\
+So I guess "
+\f2\fs26 generic" and "
+\fs24 specific" is not so strong idea. We all know the lowest conv layer provides low level filter, and I guess those\'a0appearance of performance may related to whether you have enough data to feed the net. If you don't have enough data, all layers are generic for such huge net. If you have, that is another story.
+\f1 \
+\pard\pardeftab720
+
+\f2 \cf0 \
+That is just my intuition. Waiting for others' feedback as well.
+\f1 \
+
+\f2 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\f0\fs36 \cf0 \
+\
+\
+\
+\
+\
+PART 2\
+\
+Thanks for the feedback!\
+\
+Part 2 of results:\
+\
+There's a little detail of the plot in the first email that bugged me. I expected monotonic performance drop as we move to the right on the plot, that is, as we copy more and more layers from the wrong dataset, accuracy should decrease.\
+\
+However, if you look at layers 5 and 6, you'll notice that transfer performance when the first 5 layers are trained on A and the rest are trained on B is actually slightly *worse* than when we copy the first 6 layers. It's better to copy an extra layer of filters learned from the wrong dataset. It's just a tiny bump, but why?\
+\
+It turns out, I think, that the bump is due to some interesting optimization difficulties. To expose them, I repeated the transfer experiments, but this time transferred the A filters to a new network and then retrained it on A. Concretely:\
+ - train baseA on A\
+ - copy the first N layers of baseA to a new network transferANA and freeze them\
+ - randomly initialize the higher layers of transferANA and train only those layers toward A\
+\
+(Note: we could have just done this on the whole dataset, not the A half, but then any observed effects would have been confounded with effects due to differing dataset size)\
+\
+This process gives the following results (blue dots show the performance of transferANA for various N)\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+
+\fs24 \cf0 {{\NeXTGraphic 1__#$!@%!#__plot2.png \width14464 \height9882
+}¬}\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+
+\fs36 \cf0 \
+\
+\
+Conclusions (from red and blue points):\
+\
+ - Now we can reinterpret the red points as dropping from maximum performance for two separate reasons: optimization difficulties (drop in blue curve) and dataset mismatch (gap between blue and red). The gap between blue and red shows the dataset mismatch portion of the performance drop, and it's monotonically getting larger, as initially expected. It's just tricky to measure on its own.\
+\
+\
+Conclusions (just from blue points):\
+\
+ - If we chop the network in half in the early layers (1,2,3) and retrain the upper part of it, gradient descent is able to find as good a solution as if the whole network is trained from scratch (expected).\
+\
+ - Similarly for chopping the network at the upper layers (6,7) (expected).\
+\
+ - However, if we chop the network after layer 4 or 5, gradient descent cannot recover as good of a solution as was found initially when everything was randomized. This seems to point toward a type of coadaptation of units across layers that can only be found when the units are trained together.\
+\
+Is this later point surprising? It was to me. Has this effect been observed elsewhere?\
+\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+\cf0 \
+jason\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+}
