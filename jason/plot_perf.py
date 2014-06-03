@@ -69,8 +69,8 @@ def read_info(filenames):
 
 def convert_dict(dd):
     keys = array(sorted(dd.keys()))
-    if len(unique(diff(keys))) != 1:
-        raise Exception('Expected keys to be evenly spaced, but they are not.')
+    #if len(unique(diff(keys))) != 1:
+    #    raise Exception('Expected keys to be evenly spaced, but they are not.')
     values = []
     for key in keys:
         values.append(dd[key][0])
