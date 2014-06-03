@@ -77,7 +77,7 @@ class Net(CaffeNet):
             out_blob = self.blobs[shape_ref]
         except KeyError:
             raise Exception('Cannot figure out the output shape from layer '
-                            '%s. Instead, modify this functino and provide a '
+                            '%s. Instead, modify this function and provide a '
                             'shape_ref that exists in'
                             ' .blobs, i.e. one of these: %s)' % (shape_ref, self.blobs))
         output_blob = np.zeros(out_blob.data.shape, dtype=np.float32)
@@ -86,3 +86,52 @@ class Net(CaffeNet):
         self.BackwardPartial([input_data], [output_blob], input_idx, output_idx)
 
         return output_blob
+
+    def deconv(self, input_layer, output_layer, input_data):
+        '''Performs deconvolution through multiple layers'''
+
+        #import ipdb as pdb; pdb.set_trace()
+        
+        input_idx = self.complete_layers.index(input_layer)
+        output_idx = self.complete_layers.index(output_layer)
+
+        cur_data = input_data
+        for layer_idx in range(input_idx, output_idx, -1):
+            cur_data = self.deconv_single(layer_idx, cur_data)
+        return cur_data
+
+    def deconv_single(self, layer_idx, input_data):
+        '''Performs deconvolution through a single layer.'''
+
+        assert input_data.dtype == np.float32, 'Must give float32 data, but got %s' % repr(input_data.dtype)
+        assert layer_idx > 0, 'cannot deconv starting at data layer or below'
+        
+        #import ipdb as pdb; pdb.set_trace()
+        
+        input_idx = layer_idx       # e.g. 1 for conv1
+        output_idx = layer_idx - 1  # e.g. 0 for data
+        input_layer_name = self.complete_layers[input_idx]
+        input_layer = self.layers[input_idx - 1]    # idx not considering data layer        
+        output_layer_name = self.complete_layers[output_idx]
+
+        print 'deconv_single from %d to %d (%s to %s)' % (input_idx, output_idx, input_layer_name, output_layer_name)
+
+        if 'conv' in input_layer_name:
+            #ret = self.BackwardFrom(layer_idx, layer_idx-1, input_data)
+            output_blob = np.zeros(self.blobs[output_layer_name].data.shape, dtype=np.float32)
+
+            #print '***p ', 'input_idx', input_idx, 'output_idx', output_idx
+            self.BackwardPartial([input_data], [output_blob], input_idx, output_idx)
+
+            return output_blob
+        elif 'relu' in input_layer_name:
+            return maximum(input_data, 0.0)
+        elif 'pool' in input_layer_name:
+            return maximum(input_data, 0.0)
+        elif 'norm' in input_layer_name:
+            print 'Warning: passing', input_layer_name, 'straight through'
+            return input_data
+        else:
+            raise Exception('Not sure what to do with layer: %s' % layer_name)
+        print 'done'
+        return ret
