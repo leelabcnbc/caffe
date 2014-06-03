@@ -26,6 +26,7 @@ Caffe::Caffe()
   // keep the program running as one might just want to run CPU code).
   if (cublasCreate(&cublas_handle_) != CUBLAS_STATUS_SUCCESS) {
     LOG(ERROR) << "Cannot create Cublas handle. Cublas won't be available.";
+    LOG(ERROR) << "Error is: " << cublasCreate(&cublas_handle_);
   }
   // Try to create a curand handler.
   if (curandCreateGenerator(&curand_generator_, CURAND_RNG_PSEUDO_DEFAULT)
@@ -33,6 +34,8 @@ Caffe::Caffe()
       curandSetPseudoRandomGeneratorSeed(curand_generator_, cluster_seedgen())
       != CURAND_STATUS_SUCCESS) {
     LOG(ERROR) << "Cannot create Curand generator. Curand won't be available.";
+    LOG(ERROR) << "Error is: " << curandCreateGenerator(&curand_generator_, CURAND_RNG_PSEUDO_DEFAULT);
+    LOG(ERROR) << "Error is: " << curandSetPseudoRandomGeneratorSeed(curand_generator_, cluster_seedgen());
   }
   // Try to create a vsl stream. This should almost always work, but we will
   // check it anyway.
@@ -41,6 +44,12 @@ Caffe::Caffe()
     LOG(ERROR) << "Cannot create vsl stream. VSL random number generator "
         << "won't be available.";
   }
+
+
+
+  // JBY
+  LOG(ERROR) << "DeviceQuery:";
+  DeviceQuery();
 }
 
 Caffe::~Caffe() {
@@ -91,6 +100,8 @@ void Caffe::DeviceQuery() {
   cudaDeviceProp prop;
   int device;
   if (cudaSuccess != cudaGetDevice(&device)) {
+    // JBY
+    LOG(ERROR) << "No cuda device present.";
     printf("No cuda device present.\n");
     return;
   }
