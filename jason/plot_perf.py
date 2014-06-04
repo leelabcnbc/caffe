@@ -42,7 +42,13 @@ def read_info(filenames):
 
             if expecting_test_lines > 0:
                 # We're one of the lines just after the 'Testing net' line
-                assert 'Test score #' in line, 'Unexpected pattern found'
+                # OLD: demand scores (caused a problem once)
+                #assert 'Test score #' in line, 'Unexpected pattern found'
+                # NEW: just stop looking
+                if not 'Test score #' in line:
+                    expecting_test_lines = 0
+                    testing_iter = None
+                    continue
                 if 'Test score #0:' in line:
                     insert_most_recent(test_score_0, testing_iter, float(fields[7]), timestamp)
                 elif 'Test score #1:' in line:
