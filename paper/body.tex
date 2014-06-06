@@ -45,7 +45,7 @@ If these Gabor features of the first features are general, and the features of t
 	\item Where does this transition take place: near the bottom, middle, or top of the network?
 \end{itemize}
 
-Once one has general features from some layer of a \emph{base} network trained on a dataset, a common trick is to repurpose the features, or \emph{transfer} them, to another task \citep{donahue+jia-2013-arxiv}. The usual course is to create a new network containing as its first $n$ layers the first $n$ layers of the base network, with the rest of the layers in the new network randomly initialized and trained toward the second \emph{target} task. When following this path, one can choose to backpropagate the errors from the new task into the base (copied) features to \emph{fine-tune} them to the new task, or they can be left frozen, meaning that they do not change during training on the new task. In cases where the target dataset is smaller than the base dataset, fine-tuning the base features may result in overfitting, so the features are often left frozen. On the other hand, if the target dataset is large enough, the base features can be fine-tuned to the new task. Of course, if the target dataset is very large, there would be little need to transfer because the base filters could just be learned from scratch. We compare results from each of these two domains --- fine-tuned features or frozen features --- in a later section.
+Once one has general features from some layer of a \emph{base} network trained on a dataset, a common trick is to repurpose the features, or \emph{transfer} them, to another task \citep{donahue+jia-2013-arxiv}. The usual course is to create a new network containing as its first $n$ layers the first $n$ layers of the base network, with the rest of the layers in the new network randomly initialized and trained toward the second \emph{target} task. When following this path, one can choose to backpropagate the errors from the new task into the base (copied) features to \emph{fine-tune} them to the new task, or they can be left \emph{frozen}, meaning that they do not change during training on the new task. In cases where the target dataset is smaller than the base dataset, fine-tuning the base features may result in overfitting, so the features are often left frozen. On the other hand, if the target dataset is large enough, the base features can be fine-tuned to the new task. Of course, if the target dataset is very large, there would be little need to transfer because the base filters could just be learned from scratch. We compare results from each of these two techniques --- fine-tuned features or frozen features --- below.
 
 In this paper we make several contributions:
 
@@ -322,7 +322,7 @@ Thus, the most likely explanation is that even after 450k iterations of fine tun
 \hline
            & mean boost  & mean boost \\
 layers     & over        & over \\
-aggregated & \net{baseA} & selffer \net{AnA^+} \\
+aggregated & \net{baseA} & selfer \net{AnA^+} \\
 \hline
 1-7        & 1.6\%       & 1.4\% \\
 3-7        & 1.8\%       & 1.4\% \\
