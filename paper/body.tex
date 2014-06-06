@@ -66,7 +66,7 @@ Others have loosely addressed the question of generaltiy by showing how features
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Defining Generality vs. Specificity}
+\section{Generality vs. Specificity as transfer from one dataset to another}
 \label{sec:definition}
 
 We have noted the curious tendency of gabor features to show up in the first layer of neural networks trained on natural images for a large range of network architectures and cost functions. We say these features are general if they are useful for many different tasks or specific if they are useful only for a few. We can measure the specificity of a set of features by training it on one task \dA and then using it for another task \dB.
@@ -74,6 +74,7 @@ We have noted the curious tendency of gabor features to show up in the first lay
 Of course, this definition depends on the distance between \dA and \dB. In this paper we take tasks \dA and \dB to be classifying different non-overlapping subsets of a particular dataset.  \edit{while varying the semantic distance between \dA and \dB?} This is only one possible way of sampling tasks \dA and \dB.
 
 The dataset we use is from the ImageNet Large Scale Visual Recognition Challenge 2012 (ILSVRC2012) \citep{imagenet_cvpr09}. It contains 1,281,167 labeled training images and 50,000 test images. Each image in the training and validation sets is labeled with one of 1000 classes.
+
 To create tasks \dA and \dB, we randomly split the 1000 classes into two groups, \dA and \dB, each containing 500 classes and approximately half of the data, or about 645,000 examples each. We train one convolutional net on the half-dataset \dA and one on the half-dataset \dB. These networks, which we call \net{baseA} and \net{baseB}, are shown in the top two positions of Figure~\ref{fig:transfer}.
 
 All layer sizes in \net{baseA} and \net{baseB}, as well as the networks described later in this section are the same, namely the sizes described in Section~\ref{} except for the last softmax layer, which outputs 500 classes instead of 1000.
@@ -108,18 +109,45 @@ Figure~\ref{fig:transfer} shows the networks created for $n = 3$, but we repeate
 \includegraphics[width=1\linewidth]{drawings/transfer.pdf}
 \end{center}
 \caption{Overview of the experimental treatments and controls. \emph{Top two rows:} The baseline control involves training a Convolutional Network in the normal way \citep{Krizhevsky-2012}. Training occurs on only half the dataset (e.g. dataset A) for consistency with the experimental treatments. The baseline control is repeated for each half of the dataset (A and B). The labeled rectangles (e.g. $W_{A1}$) represent the weight vector for that layer. That the rectangle is colored indicates that the weight layer has been trained on the dataset of that color (e.g. dataset A). The vertical, ellipsoidal bars represent neural activations that occur when the network is activated. \emph{Third row:} In this control, the weights (filters) of all layers are initialized randomly (checkered pattern). The weights of the first $N$ layers of the network are locked, meaning they do not change during training. The remaining layers are trained as normal on half the dataset. A replicate (not pictured) is performed on the other half of the dataset. \emph{Fourth row:} The ``selfer network'' control. In this control the first $N$ weight layers of the network are copied from a base network (e.g. one trained on dataset B) and then the entire network is trained on that same dataset (in this example, dataset B). These layers are either locked during training (in the ``locked selfer treatments'') or allowed to train as usual (in the ``released selfer treatments''. The weights of layers after the first $N$ layers are initialized randomly and then allowed to train as usual. This treatment tests whether filters at different layers need to co-adapt during training, or if they can be trained asynchronously. \emph{Fifth row:} The ``transfer network'' experimental treatment. Same as the selfer network treatment, except that the first $N$ layers are copied from one half of the dataset (e.g. B) and then the entire network is trained on the \emph{other} half of the dataset (e.g. dataset A). This treatment tests transfer learning.}
-\label{i}
+\label{fig:transfer}
 \end{figure}
 
 
+The results for the random \dA/\dB splits are shown in Section~\ref{sec:experiments_ab}. Before proceeding, we note an important point about the random splits chosen in this way. ImageNet contains 1000 classes, some of which occur in clusters of related classes. For example, there happen to be many types of certain animals included in the dataset, particularly dogs and cats, like these 13 classes from the biological family \emph{Felidae}:
+
+{
+\small
+\begin{verbatim}
+   ID        Description
+   n02123045 tabby, tabby cat
+   n02123159 tiger cat
+   n02123394 Persian cat
+   n02123597 Siamese cat, Siamese
+   n02124075 Egyptian cat
+   n02125311 cougar, puma, catamount, mountain lion, Felis concolor
+   n02127052 lynx, catamount
+   n02128385 leopard, Panthera pardus
+   n02128757 snow leopard, ounce, Panthera uncia
+   n02128925 jaguar, panther, Panthera onca, Felis onca
+   n02129165 lion, king of beasts, Panthera leo
+   n02129604 tiger, Panthera tigris
+   n02130308 cheetah, chetah, Acinonyx jubatus
+\end{verbatim}
+}
+
+Because each randomly chosen \dA/\dB half will probably contain 6 or 7 of these felids, each half will have detectors trained on all levels to classify some types of felids. When generalizing to the other half, we would expect that the new high-level felid detectors trained on top of fixed old low-level felid detectors would work well.
+
+For comparison, we've also created a special split of the dataset into two halves that are as far apart from each other as possible: one category containing only \emph{natural} classes and another containing \emph{man-made} objects. This split is not quite even --- there are 449 classes in the natural group and 551 in the man-made group. In Section~\ref{sec:experiments_random_nm} we show (a) how features transfer more poorly (so we say the are more specific) across this larger generalization gap and (b) how the generality of subsequent layers falls of smoothly.
+
+\edit{mention faster training here}
 
 
 
-\section{Details of Experiment}
+\section{Details of Experimental Setup}
 
-Since \cite{Krizhevsky-2012} won the ImageNet 2012 competition, there has naturally been much interest and work toward tweaking hyperparameters of large convolutional models. For example, \cite{Zeiler+et+al-arxiv2013b} found that it is better to decrease the first layer filters sizes from $11x11$ to $7x7$ and to use a smaller stride of $2$ instead of $4$. When beginning this study we faced the decision of exactly which convolutional architecture to use for our experiments. We decided to use the original architecture from \cite{Krizhevsky-2012} not to maximize absolute performance, but to study transfer results on what is probably the most popular single architecture, so that our results will be comparable, extensible, and useful to the largest number of other researchers. We actually expect none of the qualitative results presented here to depend at all on small architecture tweaks.
+Since \cite{Krizhevsky-2012} won the ImageNet 2012 competition, there has naturally been much interest and work toward tweaking hyperparameters of large convolutional models. For example, \cite{Zeiler+et+al-arxiv2013b} found that it is better to decrease the first layer filters sizes from $11\times 11$ to $7\times 7$ and to use a smaller stride of $2$ instead of $4$. When beginning this study we faced the decision of exactly which convolutional architecture to use for our experiments. We decided to use the original architecture from \cite{Krizhevsky-2012} not to maximize absolute performance, but to study transfer results on what is probably the most popular single architecture, so that our results will be comparable, extensible, and useful to the largest number of other researchers. We actually expect none of the qualitative results presented here to depend at all on small architecture tweaks.
 
-To this end, we used the hyperparameters provided in the reference implementation of  \cite{Krizhevsky-2012} with Caffe, a library for training convolutional models on a GPU \cite{donahue+jia-2013-arxiv}. We followed \cite{donahue+jia-2013-arxiv} in making a few minor departures from \cite{Krizhevsky-2012}: we skip the data augmentation trick of adding random multiples of principle components of pixel RGB values, which produced only a $1\%$ improvement in the original paper, and we warped images to $256x256$ instead of scaling to keep the aspect ratio and then cropping. In another difference, we placed the Local Response Normalization layers just \emph{after} the pooling layers, instead of before them. As in previous studies, we use Dropout \citep{Hinton-et-al-arxiv2012} on fully connected layers except for the softmax output layer.
+To this end, we used the hyperparameters provided in the reference implementation of  \cite{Krizhevsky-2012} with Caffe, a library for training convolutional models on a GPU \citep{donahue+jia-2013-arxiv}. We followed \citet{donahue+jia-2013-arxiv} in making a few minor departures from \cite{Krizhevsky-2012}: we skip the data augmentation trick of adding random multiples of principle components of pixel RGB values, which produced only a $1\%$ improvement in the original paper, and we warped images to $256\times 256$ instead of scaling to keep the aspect ratio and then cropping. In another difference, we placed the Local Response Normalization layers just \emph{after} the pooling layers, instead of before them. As in previous studies, we use Dropout \citep{Hinton-et-al-arxiv2012} on fully connected layers except for the softmax output layer.
 
 
 For clarity of presentation, we list all hyperparameter selections in two tables: layer sizes and locations in Table~\ref{tab:network_architecture} and weight initialization and learning rate details in Table~\ref{tab:learning_hyperparams}. In the first table, a feedforward pass proceeds from top to bottom, left to right. Because code is often more clear than text, we've also made all code and parameter files necessary to reproduce these experiments available on \url{http://github.com/...removed_for_review...}.
@@ -177,7 +205,8 @@ We used stochastic gradient descent (SGD) with momentum. Each iteration of SGD u
 
 For the bulk of the experiments in this paper, the master learning rate was started at 0.01, annealed over the course of training by dropping it by a factor of 10 every 100,000 iterations, and learning was stopped after 450,000 iterations. All training was done on NVidia K20 GPUs. Each iteration took about 1.7 seconds, meaning that the whole training procedure for a single network takes 9.5 days.
 
-Because occupying a whole GPU for this long was cumbersome, we also devised a set of hyperparameters to allow faster learning by boosting the learning rate by 25\% to 0.0125, annealing by a factor of 10 after only 64,000 iterations, and stopping after 200,000 iterations. These selections were made after looking at the learning curves for the base case and estimating at which points in each region of constant learning rate the learning had plateaued and thus annealing could take place.  A typical learning curve is shown in Figure~\ref{typical_learning}.
+Because occupying a whole GPU for this long was cumbersome, we also devised a set of hyperparameters to allow faster learning by boosting the learning rate by 25\% to 0.0125, annealing by a factor of 10 after only 64,000 iterations, and stopping after 200,000 iterations. These selections were made after looking at the learning curves for the base case and estimating at which points in each region of constant learning rate the learning had plateaued and thus annealing could take place.
+\edit{A typical learning curve is shown in Figure~\ref{typical_learning}.}
 
 
 \editbox{
@@ -199,6 +228,15 @@ Our base model attains a final top-1 error on the validation set of 42.5\%, abou
 \label{sec:experiments}
 
 
+As mentioned earlier, we did two sets of experiments. The main experiment using random random \dA/\dB splits is discussed in Section~\ref{sec:experiments_ab}, and the two comparison cases using random filters and the Natural/Man-made split is presented in Section~\ref{sec:experiments_random_nm}.
+
+
+
+
+\subsection{Random \dA/\dB splits}
+\label{sec:experiments_ab}
+
+
 \begin{figure}[htpb]
 \begin{center}
 \includegraphics[width=1\linewidth]{plots/result_transfer_crop.pdf}
@@ -208,7 +246,7 @@ Our base model attains a final top-1 error on the validation set of 42.5\%, abou
 \label{fig:results}
 \end{figure}
 
-The results of all transfer learning experiments are shown in condensed form in Figure~\ref{fig:results}. Each dot in the figure represents the average accuracy over the validation set for an entire trained network. The black dots above $n=0$ represent the accuracy of \net{baseA} or \net{baseB}. There are eight points, because we made four separate random \net{A}/\net{B} splits. Each dark blue dot represents an \net{AnA} network\footnote{Actually these dots represent \net{AnA} nets or \net{BnB} nets, the statistics of which are equivalent, because in both cases the net is trained on the same random 500 classes. To simplify notation, we'll just calling these \net{AnA} networks. Similarly, we've aggregated the \net{BnA} and \net{AnB} networks and just call them \net{BnA}}, that is, a network that was trained on dataset \dA, chopped off at layer $n$, and then whose upper layers were reinitialized and retrained toward dataset \dA while the lower layers remained frozen. The light blue points represent \net{AnA^+} networks, the same as \net{AnA} but where the lower layers were trained as well. Each dark red dot represents a \net{BnA} network, one whose first $n$ layers are copied from \net{baseB} and frozen, and then whose upper layers were randomly initialized and trained toward dataset \dA. The light red points represent \net{BnA^+} networks where all layers were fine-tuned.
+The results of all transfer learning experiments are shown in condensed form in Figure~\ref{fig:results}. Each dot in the figure represents the average accuracy over the validation set for an entire trained network. The black dots above $n=0$ represent the accuracy of \net{baseA} or \net{baseB}. There are eight points, because we made four separate random \net{A}/\net{B} splits. Each dark blue dot represents an \net{AnA} network\footnote{Actually these dots represent \net{AnA} nets or \net{BnB} nets, the statistics of which are equivalent, because in both cases the net is trained on the same random 500 classes. To simplify notation, we'll just calling these \net{AnA} networks. Similarly, we've aggregated the \net{BnA} and \net{AnB} networks and just call them \net{BnA}}, that is, a network that was trained on dataset \dA, chopped off at layer $n$, and then whose upper layers were reinitialized and retrained toward dataset \dA while the lower layers remained frozen. The light blue points represent \net{AnA^+} networks, the same as \net{AnA} but where the lower layers were fine-tuned as well. Each dark red dot represents a \net{BnA} network, one whose first $n$ layers are copied from \net{baseB} and frozen, and then whose upper layers were randomly initialized and trained toward dataset \dA. The light red points represent \net{BnA^+} networks where all layers were fine-tuned.
 
 In the top subplot plot we've shifted each type of point slightly to the left or write simply for visual clarity; if not for this shift they would all be shown directly above $n=1$, $n=2$, etc. and would overlap. In the bottom subplot we've average the results at each layer to show more clearly the overall trend and to highlight the three important effects.
 
@@ -216,7 +254,7 @@ It turns out we can conclude quite a lot from these results! In each of the foll
 
 \begin{enumerate}
 
-\item The black \net{baseA} points show that the mean performance of a network simply trained to classify a random subset of 500 classes attains a top-1 accuracy of 0.625, or 37.5\% top-1 error. This is different than the 42.5\% top-1 error attained on the 1000 class network for two a combination of two reasons: it is pushed higher because the network is trained only on half of the data, which could lead to more overfit, and it is pushed lower because there are only 500 classes, so there are only half as many ways to make mistakes. It is this latter effect that dominates, leading to lower error overall.
+\item The black \net{baseA} points show that the mean performance of a network simply trained to classify a random subset of 500 classes attains a top-1 accuracy of 0.625, or 37.5\% top-1 error. This is different than the 42.5\% top-1 error attained on the 1000 class network for a combination of two reasons: it is pushed higher because the network is trained only on half of the data, which could lead to more overfit, and it is pushed lower because there are only 500 classes, so there are only half as many ways to make mistakes. It is this latter effect that dominates, leading to lower error overall.
 
 \item The dark blue \net{AnA} points show a curious behavior. We can see at layer one that the performance is the same (as the \net{baseA} points), which was expected. If we learn eight layers of features, save the first layer of learned gabor features, and reinitialize the whole network and retrain it toward the same task, we'd expect to do just as well. This is also true for layer 2. Layers 3, 4, 5, and 6, particularly 4 and 5, behave somewhat differently. When we keep the first, say, 5 layers and retrain layers 6-8, performance suffers. This is evidence that the original network contained \emph{co-adapted features} on successive layers, that is features that interact with each other in a complex way such that this co-adaptation \emph{could not be relearned} by the upper layers. In other words, gradient descent was able to find a good solution the first time, but this was only possible because the layers were jointly trained. As we continue to the right, we see that layer 6 is nearly back to the base level of performance, as is layer 7. As we get closer and closer to the final 500-way softmax output layer (8), there is less to relearn, and apparently relearning these one or two layers is simple enough for gradient descent to find a good solution. Alternately, we may say that there is less co-adaptation of features between layers 6 and 7 or between 7 and 8.
 
@@ -230,7 +268,7 @@ Although examples of successful feature transfer have been reported elsewhere in
 
 \item The light red \net{BnA^+} points show perhaps the most surprising effect: that transferred features followed by fine-tuning result in networks that generalize better than those trained directly on the target dataset. We suspected that this effect might be simply due to longer total training time (450k base + 450k fine-tuned for \net{BnA^+} vs. 450k for \net{baseA}), but this cannot be the case, because the \net{AnA^+} networks are also trained for the same longer length of time and do not exhibit this boost in performance.
 
-Thus, the most likely explanation is that even after 450k iterations of fine tuning (beginning with completely random top layers), the effects of having seen the alternate dataset still linger, boosting generalization performance. We found the fact that this effect can linger through so much retraining surprising. Further, this lingering boon to generalization seems not to depend very much on how much of the first network we keep to initialize the second network: keeping anywhere from one to seven layers produces improved performance, with slightly better performance as we keep more layers. The average boost across layers 1 to 7 is 1.6\% over the base case, and the average if we keep at least five layers is 2.1\%.\footnote{It is somewhat strange for us to aggregate the performance over several layers. Indeed, we'd prefer to average many runs at the same layer, but each point is rather computationally expensive to obtain so we have very few as of the time of this submission. However, we think some aggregation is informative, because the performance at each layer is based on completely different random draws of initialization weights. Thus, the fact that layers 5, 6, and 7 result in almost identical performance across random draws is at least somewhat indicative that multiple runs at a given layer would result in similar performance.} The degree of performance boost is shown in Table~\ref{tab:boost}.
+Thus, the most likely explanation is that even after 450k iterations of fine tuning (beginning with completely random top layers), the effects of having seen the alternate dataset still linger, boosting generalization performance. We found surprising the fact that this effect can linger through so much retraining. Further, this lingering boon to generalization seems not to depend very much on how much of the first network we keep to initialize the second network: keeping anywhere from one to seven layers produces improved performance, with slightly better performance as we keep more layers. The average boost across layers 1 to 7 is 1.6\% over the base case, and the average if we keep at least five layers is 2.1\%.\footnote{It is somewhat strange for us to aggregate the performance over several layers. Indeed, we'd prefer to average many runs at the same layer, but each point is rather computationally expensive to obtain so we have very few as of the time of this submission. However, we think some aggregation is informative, because the performance at each layer is based on completely different random draws of initialization weights. Thus, the fact that layers 5, 6, and 7 result in almost identical performance across random draws is at least somewhat indicative that multiple runs at a given layer would result in similar performance.} The degree of performance boost is shown in Table~\ref{tab:boost}.
 
 \end{enumerate}
 
@@ -273,9 +311,28 @@ aggregated & \net{baseA} & selffer \net{AnA^+} \\
 
 
 
+\subsection{Random filters and Natural/Man-made split}
+\label{sec:experiments_random_nm}
 
+In this section we compare the transfer performance of our random \dA/\dB splits to a control --- completely random filters --- and to our manually created 449 vs. 551 class natural/man-made split.
 
+We make the first comparison because \cite{Jarrett-ICCV2009} showed, --- quite strikingly --- that the combination of random convolutional features, rectification, pooling, and local normalization can work almost as well as learned features. They showed this on relatively small networks of two or three learned layers and on a smaller dataset; and it is natural to ask whether or not the nearly optimal performance of random filters carries over to a deeper network trained on a larger dataset.
 
+We make the second comparison to see how features transfer between two tasks that are as far apart as possible using the ImageNet dataset. Many are using and will use features trained from ImageNet for completely new tasks, and this second control gives some idea of how well features from various layers will transfer.
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=1\linewidth]{plots/result_random_nm_combined_crop.pdf}
+\end{center}
+\caption{\edit{Caption here...}}
+\label{fig:random_and_nm}
+\end{figure}
+
+Figure~\ref{fig:random_and_nm} shows the results of these two additional experiments. The upper-left subplot shows the accuracy obtained when using random filters for the first $n$ layers, for various choices of $n$. Performance falls off fairly quickly in layers 1 and 2, which suggests that getting random features to work in general convnets may not be as straightforward as it was for the smaller network size and smaller dataset used by \cite{Jarrett-ICCV2009}. However, the comparison is a bit tricky, because whereas we use max pooling and local normalization on layers 1 and 2 just as they did, we use a different nonlinearity: $\mathrm{relu}(x)$ instead of $\mathrm{abs}(\mathrm{tanh}(x))$. The difference in performance could be due to a few factors: slightly different nonlinearity, the dataset itself, sizes of critical pieces of the network, etc. Their experiment only considered two layers of random features. In our case and with our chosen hyperparameters, we see that by the third layer of random features, accuracy has dropped nearly to the chance level. Of course, this represents only one datapoint, and it may well be possible to tweak layer sizes and random initialization magnitudes to enable much better performance.
+
+The upper-right subplot of Figure~\ref{fig:random_and_nm} shows the accuracy of the \net{baseA} (black circle), \net{baseB} (black square), \net{BnA} (magenta circles), and \net{AnB} (magenta squares) networks. The \net{baseA} and \net{BnA} networks are both eventually trained toward \dA, which is the natural half of the split and has higher average performance. This may be due to having only 449 classes instead of 551, or simply being an easier task, or both.
+
+Finally, in the bottom plot of Figure~\ref{fig:random_and_nm} we normalize these several experiments by subtracting the performance of their individual base cases (which vary from each other for reasons mentioned above). We then plot the relative drop in performance as we use more random layers or pull more layers from a network trained on another dataset. This comparison makes two things apparent: first, that the transferability gap between two randomly selected \dA and \dB halves grows more slowly with increasing layer than does the transferability gap between two less related halves, and second, that for this network architecture, transferring even from a distant task is better than just using random filters. This latter result may hold because the networks trained in \citep{Jarrett-ICCV2009} could have been well into the overfitting regime on a dataset as small as Caltech-101 \citep{Fei-Fei.2004}.
 
 
 
@@ -296,93 +353,5 @@ If you do have a big second dataset:
 
 
 
-A final thing to notice is that all layers are fairly general. Even the networks in column 7, in which only the final 500-way softmax layer is retrained to the new dataset, suffer only an 8\% accuracy drop.
+A final thing to notice is that all layers are fairly general. Even the networks in column 7, in which only the final 500-way softmax layer is retrained to the new dataset, suffer only an 8\% accuracy drop in the A/B split case, but a much larger 25\% drop in the natural/manmade case. In the natural/man-made split case, the drop is fairly smooth through the network
 
-Caveat: We actually have to be careful here. These results only show that a random split of half of ImageNet transfers / generalizes to the other half. However, there are many related classes in the dataset. For example, here are 13 felids:
-
-\begin{verbatim}
-   n02123045 tabby, tabby cat
-   n02123159 tiger cat
-   n02123394 Persian cat
-   n02123597 Siamese cat, Siamese
-   n02124075 Egyptian cat
-   n02125311 cougar, puma, catamount, mountain lion, Felis concolor
-   n02127052 lynx, catamount
-   n02128385 leopard, Panthera pardus
-   n02128757 snow leopard, ounce, Panthera uncia
-   n02128925 jaguar, panther, Panthera onca, Felis onca
-   n02129165 lion, king of beasts, Panthera leo
-   n02129604 tiger, Panthera tigris
-   n02130308 cheetah, chetah, Acinonyx jubatus
-\end{verbatim}
-
-Because each A/B half will probably contain 6 or 7 of these, each half will have detectors trained on all levels to classify some types of felids. When generalizing to the other half, we would expect that the new high-level felid detectors trained on top of fixed old low-level felid detectors would work well. With this in mind, I've made a special manual 449-class vs 515-class split of the dataset into "natural" and "man made" categories to show how mid-level features do or do not transfer across this larger generalization gap (experiments still running).
-
-
-
-
-
-
-Part 2 of results:
-
-There's a little detail of the plot in the first email that bugged me. I expected monotonic performance drop as we move to the right on the plot, that is, as we copy more and more layers from the wrong dataset, accuracy should decrease.
-
-However, if you look at layers 5 and 6, you'll notice that transfer performance when the first 5 layers are trained on A and the rest are trained on B is actually slightly *worse* than when we copy the first 6 layers. It's better to copy an extra layer of filters learned from the wrong dataset. It's just a tiny bump, but why?
-
-It turns out, I think, that the bump is due to some interesting optimization difficulties. To expose them, I repeated the transfer experiments, but this time transferred the A filters to a new network and then retrained it on A. Concretely:
- - train baseA on A
- - copy the first N layers of baseA to a new network transferANA and freeze them
- - randomly initialize the higher layers of transferANA and train only those layers toward A
-
-(Note: we could have just done this on the whole dataset, not the A half, but then any observed effects would have been confounded with effects due to differing dataset size)
-
-This process gives the following results (blue dots show the performance of transferANA for various N)
-
-+-------------+
-|                    |
-|                    |
-+-------------+
-(((( Figure 2 with blue and red dots ))))
-
-Conclusions (from red and blue points):
-
- - Now we can reinterpret the red points as dropping from maximum performance for two separate reasons: optimization difficulties (drop in blue curve) and dataset mismatch (gap between blue and red). The gap between blue and red shows the dataset mismatch portion of the performance drop, and it's monotonically getting larger, as initially expected. It's just tricky to measure on its own.
-
-
-Conclusions (just from blue points):
-
- - If we chop the network in half in the early layers (1,2,3) and retrain the upper part of it, gradient descent is able to find as good a solution as if the whole network is trained from scratch (expected).
-
- - Similarly for chopping the network at the upper layers (6,7) (expected).
-
- - However, if we chop the network after layer 4 or 5, gradient descent cannot recover as good of a solution as was found initially when everything was randomized. This seems to point toward a type of coadaptation of units across layers that can only be found when the units are trained together.
-
-Is this later point surprising? It was to me. Has this effect been observed elsewhere?
-
-
-
-
-
-
-
-
-
-
-
-\subsection{Control Experiment -- random filters}
-
-((do this later... maybe put at end of Exchange section instead? ))
-
-Compare to Jarret 2009 (first two layers don't work great...)
-\cite{Jarrett-ICCV2009}
-
-
-
-
-
-
-
-
-\section{Conclusions}
-
-\edit{write this}

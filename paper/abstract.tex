@@ -3,3 +3,11 @@
 \edit{write this abstract}
 
 
+
+
+...
+
+We make the first comparison because \cite{Jarrett-ICCV2009} showed, --- quite strikingly --- that the combination of random convolutional features,  rectification, pooling, and local normalization can work almost as well as learned features. They showed this on relatively small networks 
+
+
+Our results from layers 1 and 2 suggest that getting random features to work well may not be as straightforward as they found. We use max pooling and local normalization on layers 1 and 2 just as they did, but we use relu(x) where they used abs(tanh(x)). The difference in performance could be due to a few factors: slightly different nonlinearity, the dataset itself, sizes of critical pieces of the network, etc.
