@@ -51,10 +51,10 @@ In this paper we make several contributions:
 
 \begin{enumerate}
 \item We propose one way of answering the first question above through the degree to which features from one dataset transfer to another (Section~\ref{sec:definition}). We then train a large convnet on the ImageNet dataset and use our definition of generality to examine the general to specific transition (Section~\ref{sec:experiments}).
-Others have loosely addressed the question of generaltiy by showing how features from higher layers in a convnet can be transferred to new tasks \cite{donahue+jia-2013-arxiv} but here we further characterize the general to specific transition, which yields the next three results.
+Others have loosely addressed the question of generaltiy by showing how features from higher layers in a convnet can be transferred to new tasks \cite{donahue+jia-2013-arxiv} but here we systematically characterize the general to specific transition, which yields the next three results.
 \item We experimentally show that the difficulty in using transferred features can be decomposed into two separate issues: optimization difficulties due to breaking co-adaptation between neurons on neighboring layers and the specificity of the features themselves. In different regions of the network, we show how different effects dominate (Section~\ref{sec:experiments_ab}).
 \item We show how the transferability gap grows as the distance between base
-task and target task increases, and we compare both types of transfer to using random filters, which we find not to work as well on the large ImageNet dataset as for smaller datasets, as reported by \cite{Jarrett-ICCV2009}.
+task and target task increases, and we compare both types of transfer to using random filters, which we find not to work as well on the large ImageNet dataset as for smaller datasets, as reported by \cite{Jarrett-ICCV2009} (Section~\ref{sec:experiments_random_nm}).
 \item Finally, we find an interesting effect where fine-tuning filters from a different dataset can lead to better solutions, even when the datasets are the same size and training time is identical (Section~\ref{sec:experiments_ab}).
 \end{enumerate}
 
@@ -70,151 +70,174 @@ task and target task increases, and we compare both types of transfer to using r
 \label{sec:definition}
 
 We have noted the curious tendency of Gabor features to show up in the first layer of neural networks trained on natural images for a large range of network architectures and cost functions. We say these features are general if they are useful for many different tasks or specific if they are useful only for a few. We can measure the specificity of a set of features by training it on one task \dA and then using it for another task \dB.
-
-Of course, this definition depends on the distance between \dA and \dB. In this paper we take tasks \dA and \dB to be classifying different non-overlapping subsets of a particular dataset.  \edit{while varying the semantic distance between \dA and \dB?} This is only one possible way of sampling tasks \dA and \dB.
-
-The dataset we use is from the ImageNet Large Scale Visual Recognition Challenge 2012 (ILSVRC2012) \citep{imagenet_cvpr09}. It contains 1,281,167 labeled training images and 50,000 test images. Each image in the training and validation sets is labeled with one of 1000 classes.
+Of course, this definition depends on the distance between \dA and \dB. In this paper we take tasks \dA and \dB to be classifying different non-overlapping subsets of a particular dataset,
+%  \edit{while varying the semantic distance between \dA and \dB?} This is only one possible way of sampling tasks \dA and \dB.
+%The dataset we use is from the
+ImageNet, as released in the Large Scale Visual Recognition Challenge 2012 (ILSVRC2012) \citep{imagenet_cvpr09}. It contains 1,281,167 labeled training images and 50,000 test images, and each image in the training and validation sets is labeled with one of 1000 classes.
 
 To create tasks \dA and \dB, we randomly split the 1000 classes into two groups, \dA and \dB, each containing 500 classes and approximately half of the data, or about 645,000 examples each. We train one convolutional net on the half-dataset \dA and one on the half-dataset \dB. These networks, which we call \net{baseA} and \net{baseB}, are shown in the top two positions of Figure~\ref{fig:transfer}.
 
-All layer sizes in \net{baseA} and \net{baseB}, as well as the networks described later in this section are the same, namely the sizes described in Section~\ref{} except for the last softmax layer, which outputs 500 classes instead of 1000.
+All layer sizes in \net{baseA} and \net{baseB}, as well as the networks described later in this section are the same, namely the sizes described in Section~\ref{sec:setup} except for the last softmax layer, which outputs 500 classes instead of the usual 1000.
 
 
-We then choose an $n$ from $\{1, 2, \ldots, 7\}$ and train several networks. To make the discussion more concrete, let's pick for now $n=3$ (Figure~\ref{fig:transfer} also shows the $n=3$ case). First we train 
+We then choose an $n$ from $\{1, 2, \ldots, 7\}$ and train and compare several networks. To make the discussion more concrete, let's pick for now $n=3$ (Figure~\ref{fig:transfer} also shows the $n=3$ case).
+%First we train 
+%\begin{itemize}
+%\item A control network \net{R3B} with the first $3$ layers fixed to random filters and all higher layers trained to %classify images from dataset \dB.
+%\end{itemize}
+First, we define and train the following two networks:
 
 \begin{itemize}
-\item A control network \net{R3B} with the first $3$ layers fixed to random filters and all higher layers trained to classify images from dataset \dB.
-\end{itemize}
+\item A \emph{selffer} network \net{B3B} where the first $3$ layers are copied from \net{baseB} and frozen. The five higher layers are initialized randomly and trained toward dataset \dB. Here we're only using data from \dB and layers from a network \net{baseB} that was trained on \dB. This may seem a little strange, but we actually need it as an additional control for the next transfer network.
 
-Then we define and train the following two networks
-
-\begin{itemize}
-\item A \emph{selffer} network \net{B3B} where the first $3$ layers are copied from \net{baseB} and frozen. The five higher layers are initialized randomly and trained toward dataset \dB. Here we're only using data from \dB and layers from a network \net{baseB}, that was trained on \dB. This may seem a little strange, but we actually need it as an additional control for the below transfer network.
-
-\item A \emph{transfer} network \net{A3B} where the first $3$ layers are copied from \net{baseA} and frozen. The five higher layers are initialized randomly and trained toward dataset \dB. Intuitively, here we're copying the first $3$ layers from the wrong dataset, \dA,  and then trying to learn higher layer features on top of them to classify \dB. If this works well, we'll say that those first three layers are general, at least with respect to \dB, and if not, we'll say they are specific to dataset \dA
+\item A \emph{transfer} network \net{A3B} where the first $3$ layers are copied from \net{baseA} and frozen. The five higher layers are initialized randomly and trained toward dataset \dB. Intuitively, here we're copying the first $3$ layers from the wrong dataset, \dA,  and then trying to learn higher layer features on top of them to classify \dB. If this works well, we'll say that those first three layers are general, at least with respect to \dB, and if not, we'll say they are specific to \dA.
 \end{itemize}
 
 Finally, we also train fine-tuned versions of the two above networks:
 
 \begin{itemize}
-\item A \emph{selffer} network \net{B3B^+} just like \net{B3B}, but where all layers learn
-\item A \emph{transfer} network \net{A3B^+} just like \net{A3B}, but where all layers learn
+\item A \emph{selffer} network \net{B3B^+} just like \net{B3B}, but where all layers learn.
+\item A \emph{transfer} network \net{A3B^+} just like \net{A3B}, but where all layers learn.
 \end{itemize}
 
-Figure~\ref{fig:transfer} shows the networks created for $n = 3$, but we repeated this process for all $n$ in $\{1, 2, \ldots, 7\}$\footnote{Note that $n=8$ doesn't make sense in any case: \net{B8B} is just \net{baseB}, \net{R8B} is just a completely retrained version of \net{baseB}, and \net{A8B} would have no hope of working, because nothing would be trained and the 500 softmax neurons would not match between \dA and \dB.} and in both directions, i.e. transferring from \dA to \dB and \dB to \dA.
+Figure~\ref{fig:transfer} shows in the bottom two positions the networks created for $n = 3$, but we repeated this process for all $n$ in $\{1, 2, \ldots, 7\}$\footnote{Note that $n=8$ doesn't make sense in any case: \net{B8B} is just \net{baseB}, \net{R8B} is just a completely retrained version of \net{baseB}, and \net{A8B} would have no hope of working, because nothing would be trained and the 500 softmax neurons would not match between \dA and \dB.} and in both directions, i.e. transferring from \dA to \dB and \dB to \dA.
 
 
 \begin{figure}[htpb]
 \begin{center}
 \includegraphics[width=1\linewidth]{drawings/transfer.pdf}
 \end{center}
-\caption{Overview of the experimental treatments and controls. \emph{Top two rows:} The baseline control involves training a Convolutional Network in the normal way \citep{Krizhevsky-2012}. Training occurs on only half the dataset (e.g. dataset A) for consistency with the experimental treatments. The baseline control is repeated for each half of the dataset (A and B). The labeled rectangles (e.g. $W_{A1}$) represent the weight vector for that layer. That the rectangle is colored indicates that the weight layer has been trained on the dataset of that color (e.g. dataset A). The vertical, ellipsoidal bars represent neural activations that occur when the network is activated. \emph{Third row:} In this control, the weights (filters) of all layers are initialized randomly (checkered pattern). The weights of the first $N$ layers of the network are locked, meaning they do not change during training. The remaining layers are trained as normal on half the dataset. A replicate (not pictured) is performed on the other half of the dataset. \emph{Fourth row:} The ``selfer network'' control. In this control the first $N$ weight layers of the network are copied from a base network (e.g. one trained on dataset B) and then the entire network is trained on that same dataset (in this example, dataset B). These layers are either locked during training (in the ``locked selfer treatments'') or allowed to train as usual (in the ``released selfer treatments''. The weights of layers after the first $N$ layers are initialized randomly and then allowed to train as usual. This treatment tests whether filters at different layers need to co-adapt during training, or if they can be trained asynchronously. \emph{Fifth row:} The ``transfer network'' experimental treatment. Same as the selfer network treatment, except that the first $N$ layers are copied from one half of the dataset (e.g. B) and then the entire network is trained on the \emph{other} half of the dataset (e.g. dataset A). This treatment tests transfer learning.}
+\caption{Overview of the experimental treatments and controls. \emph{Top two rows:} The base convnets are trained using standard supervised backprop and randomly initializations. Training occurs on only half the dataset (e.g. dataset \dA) for consistency with the experimental treatments. The baseline control is repeated for each half of the dataset (\dA and \dB). The labeled rectangles (e.g. $W_{A1}$) represent the weight vector for that layer, with the color indicating which dataset the layer was originally trained toward. The vertical, ellipsoidal bars represent neural activations that occur when the network is activated. \emph{Third row:} In this control, the weights (filters) of all layers are initialized randomly (checkered pattern). The weights of the first $N$ layers of the network are locked, meaning they do not change during training. The remaining layers are trained as normal on half the dataset. A replicate (not pictured) is performed on the other half of the dataset. \emph{Fourth row:} The ``selfer network'' control. In this control the first $N$ weight layers of the network are copied from a base network (e.g. one trained on dataset \dB) and then the entire network is trained on that same dataset (in this example, dataset \dB). These layers are either locked during training (in the ``locked selfer treatments'') or allowed to train as usual (in the ``fine-tuned selfer treatments''). The weights of layers after the first $N$ layers are initialized randomly and then allowed to train as usual. This treatment exposes co-adaptation that can only be discovered when filters at different layers are trained together. \emph{Fifth row:} The ``transfer network'' experimental treatment. Same as the selfer network treatment, except that the first $N$ layers are copied from one half of the dataset (e.g. \dA) and then the entire network is trained on the \emph{other} half of the dataset (e.g. dataset \dB). This treatment tests transfer learning.}
 \label{fig:transfer}
 \end{figure}
 
 
 The results for the random \dA/\dB splits are shown in Section~\ref{sec:experiments_ab}. Before proceeding, we note an important point about the random splits chosen in this way. ImageNet contains 1000 classes, some of which occur in clusters of related classes. For example, there happen to be many types of certain animals included in the dataset, particularly dogs and cats, like these 13 classes from the biological family \emph{Felidae}:
+% TODO
+% long version
+%{
+%\small
+%\begin{verbatim}
+%   ID        Description
+%   n02123045 tabby, tabby cat
+%   n02123159 tiger cat
+%   n02123394 Persian cat
+%   n02123597 Siamese cat, Siamese
+%   n02124075 Egyptian cat
+%   n02125311 cougar, puma, catamount, mountain lion, Felis concolor
+%   n02127052 lynx, catamount
+%   n02128385 leopard, Panthera pardus
+%   n02128757 snow leopard, ounce, Panthera uncia
+%   n02128925 jaguar, panther, Panthera onca, Felis onca
+%   n02129165 lion, king of beasts, Panthera leo
+%   n02129604 tiger, Panthera tigris
+%   n02130308 cheetah, chetah, Acinonyx jubatus
+%\end{verbatim}
+%}
+% short version
+\{\texttt{tabby cat, tiger cat, Persian cat, Siamese cat, Egyptian cat, mountain lion, lynx, 
+leopard, snow leopard, jaguar, lion, tiger, cheetah}\}
 
-{
-\small
-\begin{verbatim}
-   ID        Description
-   n02123045 tabby, tabby cat
-   n02123159 tiger cat
-   n02123394 Persian cat
-   n02123597 Siamese cat, Siamese
-   n02124075 Egyptian cat
-   n02125311 cougar, puma, catamount, mountain lion, Felis concolor
-   n02127052 lynx, catamount
-   n02128385 leopard, Panthera pardus
-   n02128757 snow leopard, ounce, Panthera uncia
-   n02128925 jaguar, panther, Panthera onca, Felis onca
-   n02129165 lion, king of beasts, Panthera leo
-   n02129604 tiger, Panthera tigris
-   n02130308 cheetah, chetah, Acinonyx jubatus
-\end{verbatim}
-}
 
 Because each randomly chosen \dA/\dB half will probably contain 6 or 7 of these felids, each half will have detectors trained on all levels to classify some types of felids. When generalizing to the other half, we would expect that the new high-level felid detectors trained on top of fixed old low-level felid detectors would work well.
-
 For comparison, we've also created a special split of the dataset into two halves that are as far apart from each other as possible: one category containing only \emph{natural} classes and another containing \emph{man-made} objects. This split is not quite even --- there are 449 classes in the natural group and 551 in the man-made group. In Section~\ref{sec:experiments_random_nm} we show (a) how features transfer more poorly (so we say the are more specific) across this larger generalization gap and (b) how the generality of subsequent layers falls of smoothly.
 
-\edit{mention faster training here}
+% TODO
+%\edit{mention faster training here}
 
 
 
 \section{Details of Experimental Setup}
+\label{sec:setup}
 
-Since \cite{Krizhevsky-2012} won the ImageNet 2012 competition, there has naturally been much interest and work toward tweaking hyperparameters of large convolutional models. For example, \cite{Zeiler+et+al-arxiv2013b} found that it is better to decrease the first layer filters sizes from $11\times 11$ to $7\times 7$ and to use a smaller stride of $2$ instead of $4$. When beginning this study we faced the decision of exactly which convolutional architecture to use for our experiments. We decided to use the original architecture from \cite{Krizhevsky-2012} not to maximize absolute performance, but to study transfer results on what is probably the most popular single architecture, so that our results will be comparable, extensible, and useful to the largest number of other researchers. We actually expect none of the qualitative results presented here to depend at all on small architecture tweaks.
+Since \cite{Krizhevsky-2012} won the ImageNet 2012 competition, there has naturally been much interest and work toward tweaking hyperparameters of large convolutional models. For example, \cite{Zeiler+et+al-arxiv2013b} found that it is better to decrease the first layer filters sizes from $11\times 11$ to $7\times 7$ and to use a smaller stride of $2$ instead of $4$. When beginning this study we faced the decision of exactly which convolutional architecture to use for our experiments. We decided to use the original architecture from \cite{Krizhevsky-2012} not to maximize absolute performance, but to study transfer results on what is probably the most popular single architecture, so that our results will be comparable, extensible, and useful to the largest number of other researchers. We expect none of the qualitative results presented here to depend at all on small architecture tweaks.
+To this end, we used the hyperparameters provided in the reference implementation of  \cite{Krizhevsky-2012} with Caffe, a library for training convolutional models on a GPU \citep{Jia13caffe}.
+% TODO consider fitting if possible
+%We followed \citet{donahue+jia-2013-arxiv} in making a few minor departures from \cite{Krizhevsky-2012}: we skip the data augmentation trick of adding random multiples of principle components of pixel RGB values, which produced only a $1\%$ improvement in the original paper, and we warped images to $256\times 256$ instead of scaling to keep the aspect ratio and then cropping. In another difference, we placed the Local Response Normalization layers just \emph{after} the pooling layers, instead of before them. As in previous studies, we use Dropout \citep{Hinton-et-al-arxiv2012} on fully connected layers except for the softmax output layer.
 
-To this end, we used the hyperparameters provided in the reference implementation of  \cite{Krizhevsky-2012} with Caffe, a library for training convolutional models on a GPU \citep{donahue+jia-2013-arxiv}. We followed \citet{donahue+jia-2013-arxiv} in making a few minor departures from \cite{Krizhevsky-2012}: we skip the data augmentation trick of adding random multiples of principle components of pixel RGB values, which produced only a $1\%$ improvement in the original paper, and we warped images to $256\times 256$ instead of scaling to keep the aspect ratio and then cropping. In another difference, we placed the Local Response Normalization layers just \emph{after} the pooling layers, instead of before them. As in previous studies, we use Dropout \citep{Hinton-et-al-arxiv2012} on fully connected layers except for the softmax output layer.
-
-
-For clarity of presentation, we list all hyperparameter selections in two tables: layer sizes and locations in Table~\ref{tab:network_architecture} and weight initialization and learning rate details in Table~\ref{tab:learning_hyperparams}. In the first table, a feedforward pass proceeds from top to bottom, left to right. Because code is often more clear than text, we've also made all code and parameter files necessary to reproduce these experiments available on \url{http://github.com/...removed_for_review...}.
-
-
-\begin{table}[t]
-\caption{Convolutional Network architecture sizes and hyperparameters. Conv stands for Convolutional layers. FC stands for fully-connected layers. R/S indicates that the layer consists of rectilinear or sigmoidal neurons. Neurons in dropout layers fail to fire with 50\% probability \todo{accurate?} \citep{Hinton-et-al-arxiv2012}\todo{Do we need to explain what groups means? Stride?} LRN stands for local response normalization \citep{Krizhevsky-2012}.}
-\label{tab:network_architecture}
-\begin{center}
-\begin{tabular}{|r|l|l|l|l|l|l|l|l|l|}
-\hline
-       &      & filter & number  &        &        &     &         & Maxpool        & LRN (size,        \\
-name   & pad  & size   & outputs & groups & stride & R/S & Dropout & (width,stride) & $\alpha$,$\beta$) \\
-\hline
-conv1  &      & 11x11  & 96      & 1      & 4      & R   &         & 3, 2           & 5,0.0001,0.75     \\
-conv2  & 2    & 5x5    & 256     & 2      & 1      & R   &         & 3, 2           & 5,0.0001,0.75     \\
-conv3  & 1    & 3x3    & 384     & 1      & 1      & R   &         &                &                   \\
-conv4  & 1    & 3x3    & 384     & 2      & 1      & R   &         &                &                   \\
-conv5  & 1    & 3x3    & 256     & 2      & 1      & R   &         & 3, 2           &                   \\
-fc6    &      &        & 4096    & 1      &        & R   & *       &                &                   \\
-fc7    &      &        & 4096    & 1      &        & R   & *       &                &                   \\
-fc8    &      &        & 1000    & 1      &        & S   &         &                &                   \\
-\hline
-\end{tabular}
-\end{center}
-\end{table}
+% TODO: fit this in
+%For clarity of presentation, we list all hyperparameter selections in two tables: layer sizes and locations in %Table~\ref{tab:network_architecture} and weight initialization and learning rate details in %Table~\ref{tab:learning_hyperparams}. In the first table, a feedforward pass proceeds from top to bottom, left to %right.
 
 
 
+%\begin{table}[h]
+%\caption{Convolutional Network architecture sizes and hyperparameters. Conv stands for Convolutional layers. FC stands for fully-connected layers. R/S indicates that the layer consists of rectilinear or sigmoidal neurons. Neurons in dropout layers fail to fire with 50\% probability \todo{accurate?} \citep{Hinton-et-al-arxiv2012}\todo{Do we need to explain what groups means? Stride?} LRN stands for local response normalization \citep{Krizhevsky-2012}.}
+%\label{tab:network_architecture}
+%\begin{center}
+%% TODO
+%% Add padding back in
+%\begin{tabular}{|r|l|l|l|l|l|l|l|l|}
+%\hline
+%%       &      & filter & number  &        &        &     &         & Maxpool        & LRN        \\
+%%name   & pad  & size   & outputs & groups & stride & R/S & Dropout & (width,stride) & (size,$\alpha$,$\beta$) \\
+%%\hline
+%%conv1  &      & 11x11  & 96      & 1      & 4      & R   &         & 3, 2           & 5,0.0001,0.75     \\
+%%conv2  & 2    & 5x5    & 256     & 2      & 1      & R   &         & 3, 2           & 5,0.0001,0.75     \\
+%%conv3  & 1    & 3x3    & 384     & 1      & 1      & R   &         &                &                   \\
+%%conv4  & 1    & 3x3    & 384     & 2      & 1      & R   &         &                &                   \\
+%%conv5  & 1    & 3x3    & 256     & 2      & 1      & R   &         & 3, 2           &                   \\
+%%fc6    &      &        & 4096    & 1      &        & R   & *       &                &                   \\
+%%fc7    &      &        & 4096    & 1      &        & R   & *       &                &                   \\
+%%fc8    &      &        & 1000    & 1      &        & S   &         &                &                   \\
+%        & filter & number  &        &        &     &         & Maxpool        & LRN        \\
+%name    & size   & outputs & groups & stride & R/S & Dropout & (width,stride) & (size,$\alpha$,$\beta$) \\
+%\hline
+%conv1   & 11x11  & 96      & 1      & 4      & R   &         & 3, 2           & 5,0.0001,0.75     \\
+%conv2   & 5x5    & 256     & 2      & 1      & R   &         & 3, 2           & 5,0.0001,0.75     \\
+%conv3   & 3x3    & 384     & 1      & 1      & R   &         &                &                   \\
+%conv4   & 3x3    & 384     & 2      & 1      & R   &         &                &                   \\
+%conv5   & 3x3    & 256     & 2      & 1      & R   &         & 3, 2           &                   \\
+%fc6     &        & 4096    & 1      &        & R   & *       &                &                   \\
+%fc7     &        & 4096    & 1      &        & R   & *       &                &                   \\
+%fc8     &        & 1000    & 1      &        & S   &         &                &                   \\
+%\hline
+%\end{tabular}
+%\end{center}
+%\end{table}
 
-\begin{table}[t]
-\caption{Parameter initializations and learning rates. \todo{JY: I expanded the table headings (we have the space). Please check that I did so accurately. I had to guess on most.}}
-\label{tab:learning_hyperparams}
-\begin{center}
-\begin{tabular}{|r|l|l|l|l|l|l|}
-\hline
-       & \multicolumn{3}{c|}{\bf Weight}     &  \multicolumn{3}{c|}{\bf Bias}       \\
-\cline{2-7}
-       & Gaussian Std. Dev.   & Local Response-multiplier & decay &  const  & Local Response  & decay \\
-\hline
-conv1  & .01    & 1       & y     &  0      & 2   & n     \\
-conv2  & .01    & 1       & y     &  1      & 2   & n     \\
-conv3  & .01    & 1       & y     &  0      & 2   & n     \\
-conv4  & .01    & 1       & y     &  1      & 2   & n     \\
-conv5  & .01    & 1       & y     &  1      & 2   & n     \\
-fc6    & .005   & 1       & y     &  1      & 2   & n     \\
-fc7    & .005   & 1       & y     &  1      & 2   & n     \\
-fc8    & .01    & 1       & y     &  0      & 2   & n     \\ 
-\hline
-\end{tabular}
-\end{center}
-\end{table}
+%\begin{table}[t]
+%\caption{Parameter initializations and learning rates. \todo{JY: I expanded the table headings (we have the space). Please check that I did so accurately. I had to guess on most.}}
+%\label{tab:learning_hyperparams}
+%\begin{center}
+%\begin{tabular}{|r|l|l|l|l|l|l|}
+%\hline
+%       & \multicolumn{3}{c|}{\bf Weight}     &  \multicolumn{3}{c|}{\bf Bias}       \\
+%\cline{2-7}
+%       & Gaussian Std. Dev.   & Local Response-multiplier & decay &  const  & Local Response  & decay \\
+%\hline
+%conv1  & .01    & 1       & y     &  0      & 2   & n     \\
+%conv2  & .01    & 1       & y     &  1      & 2   & n     \\
+%conv3  & .01    & 1       & y     &  0      & 2   & n     \\
+%conv4  & .01    & 1       & y     &  1      & 2   & n     \\
+%conv5  & .01    & 1       & y     &  1      & 2   & n     \\
+%fc6    & .005   & 1       & y     &  1      & 2   & n     \\
+%fc7    & .005   & 1       & y     &  1      & 2   & n     \\
+%fc8    & .01    & 1       & y     &  0      & 2   & n     \\ 
+%\hline
+%\end{tabular}
+%\end{center}
+%\end{table}
 
-We used stochastic gradient descent (SGD) with momentum. Each iteration of SGD used a batch size of 256, momentum 0.9, and multiplicative weight decay (for those weights with weight decay enabled) of 0.0005 per iteration.
+% TODO: reinsert
+%We trained used stochastic gradient descent (SGD) with momentum. Each iteration of SGD used a batch size of 256, momentum 0.9, and multiplicative weight decay (for those weights with weight decay enabled) of 0.0005 per iteration.
 
 For the bulk of the experiments in this paper, the master learning rate was started at 0.01, annealed over the course of training by dropping it by a factor of 10 every 100,000 iterations, and learning was stopped after 450,000 iterations. All training was done on NVidia K20 GPUs. Each iteration took about 1.7 seconds, meaning that the whole training procedure for a single network takes 9.5 days.
 
 Because occupying a whole GPU for this long was cumbersome, we also devised a set of hyperparameters to allow faster learning by boosting the learning rate by 25\% to 0.0125, annealing by a factor of 10 after only 64,000 iterations, and stopping after 200,000 iterations. These selections were made after looking at the learning curves for the base case and estimating at which points in each region of constant learning rate the learning had plateaued and thus annealing could take place.
-\edit{A typical learning curve is shown in Figure~\ref{typical_learning}.}
+This faster training schedule was only used for the natural vs. man-made experiments in Section~\ref{sec:experiments_random_nm}.
 
 
-\editbox{
-Figure {typical\_learning}
-(( make this figure, if important, once reduced-1300-2 run is done ))
-}
+
+%\edit{A typical learning curve is shown in Figure~\ref{typical_learning}.}
+%
+%\editbox{
+%Figure {typical\_learning}
+%(( make this figure, if important, once reduced-1300-2 run is done ))
+%}
 
 Our base model attains a final top-1 error on the validation set of 42.5\%, about the same as the 42.9\% reported by \cite{donahue+jia-2013-arxiv} and 1.8\% worse than \cite{Krizhevsky-2012}, the latter difference probably due to the few minor training differences. We checked these values only to demonstrate that the network was converging reasonably. As our goal is not to improve the state of the art, but to investigate properties of transfer, we were content with this level of performance.
+
+Because code is often more clear than text, we've also made all code and parameter files necessary to reproduce these experiments available on \url{http://github.com/...removed_for_review...}.
 
 
 
@@ -227,8 +250,7 @@ Our base model attains a final top-1 error on the validation set of 42.5\%, abou
 \section{Transfer Results and Discussion}
 \label{sec:experiments}
 
-
-As mentioned earlier, we did two sets of experiments. The main experiment using random random \dA/\dB splits is discussed in Section~\ref{sec:experiments_ab}, and the two comparison cases using random filters and the Natural/Man-made split is presented in Section~\ref{sec:experiments_random_nm}.
+We performed two sets of experiments. The main experiment using random \dA/\dB splits is discussed in Section~\ref{sec:experiments_ab}, and the two comparison cases using random filters and the Natural/Man-made split is presented in Section~\ref{sec:experiments_random_nm}.
 
 
 
@@ -237,12 +259,12 @@ As mentioned earlier, we did two sets of experiments. The main experiment using 
 \label{sec:experiments_ab}
 
 
-\begin{figure}[htpb]
+\begin{figure}[t]
 \begin{center}
-\includegraphics[width=1\linewidth]{plots/result_transfer_crop.pdf}
-\includegraphics[width=1\linewidth]{plots/result_transfer_lines_crop.pdf}
+\includegraphics[width=.9\linewidth]{plots/result_transfer_crop.pdf}
+\includegraphics[width=.9\linewidth]{plots/result_transfer_lines_crop.pdf}
 \end{center}
-\caption{Accuracy of each treatment and control. \emph{Top panel:} Raw data. \emph{Bottom panel}: Lines connect the medians of each treatment. Shaded areas and text highlight key takeaway messages. \todo{This is the min. required if we explain the figure in the main text.}
+\caption{The distilled results from the main experiment in this paper, see the text for detail. \emph{Top panel:} Raw data. \emph{Bottom panel}: Lines connecting the means of each treatment. Shaded areas and numbers refer to which interpretation of Section~\ref{sec:experiments_ab} applies.
 }
 \label{fig:results}
 \end{figure}
@@ -321,11 +343,11 @@ We make the first comparison because \cite{Jarrett-ICCV2009} showed, --- quite s
 
 We make the second comparison to see how features transfer between two tasks that are as far apart as possible using the ImageNet dataset. Many are using and will use features trained from ImageNet for completely new tasks, and this second control gives some idea of how well features from various layers will transfer.
 
-\begin{figure}
+\begin{figure}[t]
 \begin{center}
-\includegraphics[width=1\linewidth]{plots/result_random_nm_combined_crop.pdf}
+\includegraphics[width=.7\linewidth]{plots/result_random_nm_combined_crop.pdf}
 \end{center}
-\caption{\edit{Caption here...}}
+\caption{Performance degredation vs. layer; see text for details. (top left): random fixed features. (top right): a manual split of ImageNet into natural vs. man-made groups. (bottom): the top two plots normalized by their base performance and compared to the \dA/\dB split from Section~\ref{sec:experiments_ab} (in red).}
 \label{fig:random_and_nm}
 \end{figure}
 
