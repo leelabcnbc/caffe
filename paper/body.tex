@@ -338,20 +338,6 @@ Finally, in the bottom plot of Figure~\ref{fig:random_and_nm} we normalize these
 
 \section{Conclusions}
 
-
-
-Practical conclusions
-
-If you don't have a big second dataset:
-
-Results 2 and 4 imply that those wishing to transfer features from one dataset to another face not only the problem of specificity, but....
-
-
-
-If you do have a big second dataset:
-
-
-
-
-A final thing to notice is that all layers are fairly general. Even the networks in column 7, in which only the final 500-way softmax layer is retrained to the new dataset, suffer only an 8\% accuracy drop in the A/B split case, but a much larger 25\% drop in the natural/manmade case. In the natural/man-made split case, the drop is fairly smooth through the network
+In this paper we've demonstrated a method for quantifying the ability to transfer features from a deep net layer by layer. We showed how transferability is negatively affected by two distinct issues --- optimization difficulties related to splitting networks in the middle of co-adapted layers and the specialization of higher layer neurons to their original task at the expense of the target task. In a large convolutional network similar to those that represent the state of the art on the large ImageNet dataset, we observed that either of these two issues may dominate, depending on whether features are transferred from the bottom, middle, or top of this deep network.
+We've quantified how the transferability gap grows as the distance between tasks increases, but how even features transferred from distant tasks can be better than random features. Finally, we've observed that initializing a network with transferred features from almost any number of layers can produce a boost to generalization that lingers even after a lengthy training procedure.
 

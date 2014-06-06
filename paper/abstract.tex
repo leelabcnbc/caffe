@@ -1,13 +1,25 @@
 % !TEX root = main.tex
 
-\edit{write this abstract}
-
-
-
-
-...
-
-We make the first comparison because \cite{Jarrett-ICCV2009} showed, --- quite strikingly --- that the combination of random convolutional features,  rectification, pooling, and local normalization can work almost as well as learned features. They showed this on relatively small networks 
-
-
-Our results from layers 1 and 2 suggest that getting random features to work well may not be as straightforward as they found. We use max pooling and local normalization on layers 1 and 2 just as they did, but we use relu(x) where they used abs(tanh(x)). The difference in performance could be due to a few factors: slightly different nonlinearity, the dataset itself, sizes of critical pieces of the network, etc.
+A high percentage of recently reported deep networks trained on
+natural images exhibit a curious aspect in common: they all learn
+features similar to gabor filters on the first layer. Such features
+appear to be \emph{general}, as opposed to \emph{specific} for a
+particular task. Because higher layers are difficult to visualize, not
+as much is known about whether the are general or specific. In this
+paper we experimentally quantify the generality of neurons on each
+layer of a deep convolutional neural network and through this expose a
+few surprising aspects. First, we find that transferability is
+negatively affected by two distinct issues --- not only the expected
+specialization of higher layer neurons to their original task at the
+expense of the target task, but also optimization difficulties related
+to splitting networks in the middle of co-adapted neurons. In an
+example network trained on ImageNet, we demonstrate that either of
+these two issues may dominate, depending on whether features are
+transferred from the bottom, middle, or top of the network.  We also
+show how the transferability gap grows as the distance between base
+task and target task increases, but how even transfer from distant
+tasks can be better than using random features. Finally, we show a
+surprising result that initializing a network with transferred
+features from almost any number of layers can produce a boost to
+generalization that lingers even after fine-tuning to the target
+dataset.
