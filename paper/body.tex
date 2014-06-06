@@ -9,7 +9,7 @@ Many trained neural networks reported recently in the literature exhibit a curio
 % TODO: (see Figure~\ref{fig:layer1}) \todo{fix broken figure ref here}.
 The appearance of these Gabor filters is so common that to obtain anything else on a natural-image dataset causes suspicion of poorly chosen hyperparameters or a software bug. 
 %In fact, this paper's authors are now used to checking for Gabor features in the first layer simply to assure ourselves that the training is at least partially working.
-This phenomenon occurs not only for different datasets, but even with very different training objectives, from supervised image classification \citep{Krizhevsky-2012} to unsupervised sparse representation learning\cite{Le-2011-ICA}.
+This phenomenon occurs not only for different datasets, but even with very different training objectives, from supervised image classification \citep{Krizhevsky-2012} to unsupervised sparse representation learning \citep{Le-2011-ICA}.
 
 % Deleted fluff
 
@@ -45,7 +45,7 @@ If these Gabor features of the first features are general, and the features of t
 	\item Where does this transition take place: near the bottom, middle, or top of the network?
 \end{itemize}
 
-Once one has general features from some layer of a \emph{base} network trained on a dataset, a common trick is to repurpose the features, or \emph{transfer} them, to another task \citep{donahue+jia-2013-arxiv}. The usual course is to create a new network containing as its first $n$ layers the first $n$ layers of the base network, with the rest of the layers in the new network randomly initialized and trained toward the second \emph{target} task. When following this path, one can choose to backpropagate the errors from the new task into the base (copied) features to \emph{fine-tune} them to the new task, or they can be left \emph{frozen}, meaning that they do not change during training on the new task. In cases where the target dataset is smaller than the base dataset, fine-tuning the base features may result in overfitting, so the features are often left frozen. On the other hand, if the target dataset is large enough, the base features can be fine-tuned to the new task. Of course, if the target dataset is very large, there would be little need to transfer because the base filters could just be learned from scratch. We compare results from each of these two techniques --- fine-tuned features or frozen features --- below.
+Once one has general features from some layer of a \emph{base} network trained on a dataset, a common trick is to repurpose the features, or \emph{transfer} them, to another task \citep{caruana95,Bengio+al-AI-2011-small,UTLC+DL+tutorial-2011-small,donahue+jia-2013-arxiv}. The usual course is to create a new network containing as its first $n$ layers the first $n$ layers of the base network, with the rest of the layers in the new network randomly initialized and trained toward the second \emph{target} task. When following this path, one can choose to backpropagate the errors from the new task into the base (copied) features to \emph{fine-tune} them to the new task, or they can be left frozen, meaning that they do not change during training on the new task. In cases where the target dataset is smaller than the base dataset, fine-tuning the base features may result in overfitting, so the features are often left frozen. On the other hand, if the target dataset is large enough, the base features can be fine-tuned to the new task. Of course, if the target dataset is very large, there would be little need to transfer because the base filters could just be learned from scratch. We compare results from each of these two domains --- fine-tuned features or frozen features --- in a later section.
 
 In this paper we make several contributions:
 
@@ -66,7 +66,7 @@ task and target task increases, and we compare both types of transfer to using r
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Generality vs. specificity measured as transfer performance}
+\section{Generality vs. Specificity as transfer from one dataset to another}
 \label{sec:definition}
 
 We have noted the curious tendency of Gabor features to show up in the first layer of neural networks trained on natural images for a large range of network architectures and cost functions. We say these features are general if they are useful for many different tasks or specific if they are useful only for a few. We can measure the specificity of a set of features by training it on one task \dA and then using it for another task \dB.
@@ -76,11 +76,9 @@ Of course, this definition depends on the distance between \dA and \dB. In this 
 ImageNet, as released in the Large Scale Visual Recognition Challenge 2012 (ILSVRC2012) \citep{imagenet_cvpr09}. It contains 1,281,167 labeled training images and 50,000 test images, and each image in the training and validation sets is labeled with one of 1000 classes.
 
 To create tasks \dA and \dB, we randomly split the 1000 classes into two groups, \dA and \dB, each containing 500 classes and approximately half of the data, or about 645,000 examples each. We train one convolutional net on the half-dataset \dA and one on the half-dataset \dB. These networks, which we call \net{baseA} and \net{baseB}, are shown in the top two positions of Figure~\ref{fig:transfer}.
-
-All layer sizes in \net{baseA} and \net{baseB}, as well as the networks described later in this section are the same, namely the sizes described in Section~\ref{sec:setup} except for the last softmax layer, which outputs 500 classes instead of the usual 1000.
-
-
-We then choose an $n$ from $\{1, 2, \ldots, 7\}$ and train and compare several networks. To make the discussion more concrete, let's pick for now $n=3$ (Figure~\ref{fig:transfer} also shows the $n=3$ case).
+% TODO reinsert
+%All layer sizes in \net{baseA} and \net{baseB}, as well as the networks described later in this section are the same, namely the sizes described in Section~\ref{sec:setup} except for the last softmax layer, which outputs 500 classes instead of the usual 1000.
+We then choose an $n$ from $\{1, 2, \ldots, 7\}$ and train and compare several new networks. To make the discussion more concrete, let's pick for now $n=3$ (Figure~\ref{fig:transfer} also shows the $n=3$ case).
 %First we train 
 %\begin{itemize}
 %\item A control network \net{R3B} with the first $3$ layers fixed to random filters and all higher layers trained to %classify images from dataset \dB.
@@ -93,7 +91,7 @@ First, we define and train the following two networks:
 \item A \emph{transfer} network \net{A3B} where the first $3$ layers are copied from \net{baseA} and frozen. The five higher layers are initialized randomly and trained toward dataset \dB. Intuitively, here we're copying the first $3$ layers from the wrong dataset, \dA,  and then trying to learn higher layer features on top of them to classify \dB. If this works well, we'll say that those first three layers are general, at least with respect to \dB, and if not, we'll say they are specific to \dA.
 \end{itemize}
 
-Finally, we also train fine-tuned versions of the two above networks:
+Then we create and train fine-tuned versions of the two above networks:
 
 \begin{itemize}
 \item A \emph{selffer} network \net{B3B^+} just like \net{B3B}, but where all layers learn.
@@ -150,8 +148,12 @@ For comparison, we've also created a special split of the dataset into two halve
 \section{Details of Experimental Setup}
 \label{sec:setup}
 
-Since \cite{Krizhevsky-2012} won the ImageNet 2012 competition, there has naturally been much interest and work toward tweaking hyperparameters of large convolutional models. For example, \cite{Zeiler+et+al-arxiv2013b} found that it is better to decrease the first layer filters sizes from $11\times 11$ to $7\times 7$ and to use a smaller stride of $2$ instead of $4$. When beginning this study we faced the decision of exactly which convolutional architecture to use for our experiments. We decided to use the original architecture from \cite{Krizhevsky-2012} not to maximize absolute performance, but to study transfer results on what is probably the most popular single architecture, so that our results will be comparable, extensible, and useful to the largest number of other researchers. We expect none of the qualitative results presented here to depend at all on small architecture tweaks.
-To this end, we used the hyperparameters provided in the reference implementation of  \cite{Krizhevsky-2012} with Caffe, a library for training convolutional models on a GPU \citep{Jia13caffe}.
+Since \cite{Krizhevsky-2012} won the ImageNet 2012 competition, there has naturally been much interest and work toward tweaking hyperparameters of large convolutional models. For example, \cite{Zeiler+et+al-arxiv2013b} found that it is better to decrease the first layer filters sizes from $11\times 11$ to $7\times 7$ and to use a smaller stride of $2$ instead of $4$.
+%When beginning this study we faced the decision of exactly which convolutional architecture to use for our experiments.
+For this study we decided to use the original architecture from \cite{Krizhevsky-2012} as provided in the reference implementation in Caffe, a library for training convolutional models on a GPU \citep{Jia13caffe}.
+We aim not to maximize absolute performance, but to study transfer results on what is probably the most popular single architecture, so that our results will be comparable, extensible, and useful to the largest number of other researchers.
+%To this end, we used the hyperparameters provided in the reference implementation of  \cite{Krizhevsky-2012} with Caffe, a library for training convolutional models on a GPU \citep{Jia13caffe}.
+We expect none of the qualitative results presented here to depend at all on small architecture tweaks.
 % TODO consider fitting if possible
 %We followed \citet{donahue+jia-2013-arxiv} in making a few minor departures from \cite{Krizhevsky-2012}: we skip the data augmentation trick of adding random multiples of principle components of pixel RGB values, which produced only a $1\%$ improvement in the original paper, and we warped images to $256\times 256$ instead of scaling to keep the aspect ratio and then cropping. In another difference, we placed the Local Response Normalization layers just \emph{after} the pooling layers, instead of before them. As in previous studies, we use Dropout \citep{Hinton-et-al-arxiv2012} on fully connected layers except for the softmax output layer.
 
@@ -221,8 +223,9 @@ To this end, we used the hyperparameters provided in the reference implementatio
 % TODO: reinsert
 %We trained used stochastic gradient descent (SGD) with momentum. Each iteration of SGD used a batch size of 256, momentum 0.9, and multiplicative weight decay (for those weights with weight decay enabled) of 0.0005 per iteration.
 
-For the bulk of the experiments in this paper, the master learning rate was started at 0.01, annealed over the course of training by dropping it by a factor of 10 every 100,000 iterations, and learning was stopped after 450,000 iterations. All training was done on NVidia K20 GPUs. Each iteration took about 1.7 seconds, meaning that the whole training procedure for a single network takes 9.5 days.
-
+For the bulk of the experiments in this paper, the master learning rate was started at 0.01, annealed over the course of training by dropping it by a factor of 10 every 100,000 iterations, and learning was stopped after 450,000 iterations.
+%All training was done on NVidia K20 GPUs. 
+Each iteration took about 1.7 seconds, meaning that the whole training procedure for a single network takes 9.5 days.
 Because occupying a whole GPU for this long was cumbersome, we also devised a set of hyperparameters to allow faster learning by boosting the learning rate by 25\% to 0.0125, annealing by a factor of 10 after only 64,000 iterations, and stopping after 200,000 iterations. These selections were made after looking at the learning curves for the base case and estimating at which points in each region of constant learning rate the learning had plateaued and thus annealing could take place.
 This faster training schedule was only used for the natural vs. man-made experiments in Section~\ref{sec:experiments_random_nm}.
 
@@ -235,9 +238,7 @@ This faster training schedule was only used for the natural vs. man-made experim
 %(( make this figure, if important, once reduced-1300-2 run is done ))
 %}
 
-Our base model attains a final top-1 error on the validation set of 42.5\%, about the same as the 42.9\% reported by \cite{donahue+jia-2013-arxiv} and 1.8\% worse than \cite{Krizhevsky-2012}, the latter difference probably due to the few minor training differences. We checked these values only to demonstrate that the network was converging reasonably. As our goal is not to improve the state of the art, but to investigate properties of transfer, we were content with this level of performance.
-
-Because code is often more clear than text, we've also made all code and parameter files necessary to reproduce these experiments available on \url{http://github.com/...removed_for_review...}.
+Our base model attains a final top-1 error on the validation set of 42.5\%, about the same as the 42.9\% reported by \cite{donahue+jia-2013-arxiv} and 1.8\% worse than \cite{Krizhevsky-2012}, the latter difference probably due to the few minor training differences. We checked these values only to demonstrate that the network was converging reasonably. As our goal is not to improve the state of the art, but to investigate properties of transfer, we were content with this level of performance. Because code is often more clear than text, we've also made all code and parameter files necessary to reproduce these experiments available on \url{http://github.com/...removed_for_review...}.
 
 
 
@@ -322,7 +323,7 @@ Thus, the most likely explanation is that even after 450k iterations of fine tun
 \hline
            & mean boost  & mean boost \\
 layers     & over        & over \\
-aggregated & \net{baseA} & selfer \net{AnA^+} \\
+aggregated & \net{baseA} & selffer \net{AnA^+} \\
 \hline
 1-7        & 1.6\%       & 1.4\% \\
 3-7        & 1.8\%       & 1.4\% \\
