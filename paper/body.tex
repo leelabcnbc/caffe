@@ -104,9 +104,9 @@ Figure~\ref{fig:transfer} shows in the bottom two positions the networks created
 
 \begin{figure}[t]
 \begin{center}
-\includegraphics[width=1\linewidth]{drawings/transfer.pdf}
+\includegraphics[width=.8\linewidth]{drawings/transfer.pdf}
 \end{center}
-\caption{Overview of the experimental treatments and controls. \emph{Top two rows:} The base convnets are trained using standard supervised backprop and randomly initializations. Training occurs on only half the dataset (e.g. dataset \dA) for consistency with the experimental treatments. The baseline control is repeated for each half of the dataset (\dA and \dB). The labeled rectangles (e.g. $W_{A1}$) represent the weight vector for that layer, with the color indicating which dataset the layer was originally trained toward. The vertical, ellipsoidal bars represent neural activations that occur when the network is activated.
+\caption{Overview of the experimental treatments and controls. \emph{Top two rows:} The base convnets are trained using standard supervised backprop on only half of the dataset (\dA or \dB). The baseline control is repeated for each half of the dataset (\dA and \dB). The labeled rectangles (e.g. $W_{A1}$) represent the weight vector for that layer, with the color indicating which dataset the layer was originally trained toward. The vertical, ellipsoidal bars represent neural activations that occur when the network is activated.
 %HERE\emph{Third row:} In this control, the weights (filters) of all layers are initialized randomly (checkered pattern). The weights of the first $N$ layers of the network are locked, meaning they do not change during training. The remaining layers are trained as normal on half the dataset. A replicate (not pictured) is performed on the other half of the dataset.
 \emph{Third row:} The ``selfer network'' control. In this control the first $N$ weight layers of the network are copied from a base network (e.g. one trained on dataset \dB) and then the entire network is trained on that same dataset (in this example, dataset \dB). These layers are either locked during training (in the ``locked selfer treatments'') or allowed to train as usual (in the ``fine-tuned selfer treatments''). The weights of layers after the first $N$ layers are initialized randomly and then allowed to train as usual. This treatment exposes co-adaptation that can only be discovered when filters at different layers are trained together. \emph{Fourth row:} The ``transfer network'' experimental treatment. Same as the selfer network treatment, except that the first $N$ layers are copied from one half of the dataset (e.g. \dA) and then the entire network is trained on the \emph{other} half of the dataset (e.g. dataset \dB). This treatment tests transfer learning.}
 \label{fig:transfer}
@@ -265,8 +265,8 @@ We performed two sets of experiments. The main experiment using random \dA/\dB s
 
 \begin{figure}[t]
 \begin{center}
-\includegraphics[width=.9\linewidth]{plots/result_transfer_crop.pdf}
-\includegraphics[width=.9\linewidth]{plots/result_transfer_lines_crop.pdf}
+\includegraphics[width=.85\linewidth]{plots/result_transfer_crop.pdf}
+\includegraphics[width=.85\linewidth]{plots/result_transfer_lines_crop.pdf}
 \end{center}
 \caption{The distilled results from the main experiment in this paper, see the text for detail. \emph{Top panel:} Raw data. \emph{Bottom panel}: Lines connecting the means of each treatment. Shaded areas and numbers refer to which interpretation of Section~\ref{sec:experiments_ab} applies.
 }
@@ -349,7 +349,7 @@ We make the second comparison to see how features transfer between two tasks tha
 
 \begin{figure}[t]
 \begin{center}
-\includegraphics[width=.7\linewidth]{plots/result_random_nm_combined_crop.pdf}
+\includegraphics[width=.65\linewidth]{plots/result_random_nm_combined_crop.pdf}
 \end{center}
 \caption{Performance degredation vs. layer; see text for details. (top left): random fixed features. (top right): a manual split of ImageNet into natural vs. man-made groups. (bottom): the top two plots normalized by their base performance and compared to the \dA/\dB split from Section~\ref{sec:experiments_ab} (in red).}
 \label{fig:random_and_nm}
