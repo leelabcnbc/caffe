@@ -1,6 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% !TEX root = main.tex
 
 \section{Introduction}
 
@@ -26,7 +27,7 @@ Grand speculation aside, here we seek to understand a few properties of one of t
 
 \editbox{write some intro fluff here ----}
 
-Many trained networks reported recently in the literature --- unsupervised and supervised alike --- exhibit a curious aspect in common: they all learn features that resemble gabor filters on the first layer (see Figure~\ref{fig:layer1}). This happens with such frequency that not only is it no longer surprising, but to obtain anything else on a natural-image dataset causes suspicion of poorly chosen hyperparameters or a bug somewhere in one's code. In fact, this paper's authors are now used to checking for gabor features in the first layer simply to assure ourselves that the training is at least partially working.
+Many trained networks reported recently in the literature --- unsupervised and supervised alike --- exhibit a curious aspect in common: they all learn features that resemble gabor filters on the first layer (see Figure~\ref{fig:layer1}) \editbox{fix broken figure ref here}. This happens with such frequency that not only is it no longer surprising, but to obtain anything else on a natural-image dataset causes suspicion of poorly chosen hyperparameters or a bug somewhere in one's code. In fact, this paper's authors are now used to checking for gabor features in the first layer simply to assure ourselves that the training is at least partially working.
 
 Because finding gabor features on the first layer seems to occur regardless of the exact cost function and natural image dataset used, we may call these these features \emph{general}. On the other hand, we know that the last layer of a trained network will depend greatly on the chosen \{network model, dataset\} combination. For example, for networks trained toward a supervised classification objective, each output unit will be specific to a particular class, at least to the extent that training is successful. In this sense, let's say that the last layer features are \emph{specific}. So far these terms are only intuitively defined, but we shall give one possible more rigorous definition soon.
 
@@ -107,7 +108,7 @@ Figure~\ref{fig:transfer} shows the networks created for $n = 3$, but we repeate
 \includegraphics[width=1\linewidth]{drawings/transfer.pdf}
 \end{center}
 \caption{\edit{Caption here...}}
-\label{fig:transfer}
+\label{i}
 \end{figure}
 
 
@@ -125,7 +126,7 @@ For clarity of presentation, we list all hyperparameter selections in two tables
 
 
 \begin{table}[t]
-\caption{Convolutional Network architecture sizes and hyperparameters}
+\caption{Convolutional Network architecture sizes and hyperparameters. \todo{explain what R vs. S is}}
 \label{tab:network_architecture}
 \begin{center}
 \begin{tabular}{|r|l|l|l|l|l|l|l|l|l|}
