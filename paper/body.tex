@@ -126,7 +126,7 @@ For clarity of presentation, we list all hyperparameter selections in two tables
 
 
 \begin{table}[t]
-\caption{Convolutional Network architecture sizes and hyperparameters. \todo{explain what R vs. S is}}
+\caption{Convolutional Network architecture sizes and hyperparameters. Conv stands for Convolutional layers. FC stands for fully-connected layers. R/S indicates that the layer consists of rectilinear or sigmoidal neurons. Neurons in dropout layers fail to fire with 50\% probability \todo{accurate?} \citep{Hinton-et-al-arxiv2012}\todo{Do we need to explain what groups means? Stride?} LRN stands for local response normalization \citep{Krizhevsky-2012}.}
 \label{tab:network_architecture}
 \begin{center}
 \begin{tabular}{|r|l|l|l|l|l|l|l|l|l|}
@@ -151,14 +151,14 @@ fc8    &      &        & 1000    & 1      &        & S   &         &            
 
 
 \begin{table}[t]
-\caption{Parameter initializations and learning rates}
+\caption{Parameter initializations and learning rates. \todo{JY: I expanded the table headings (we have the space). Please check that I did so accurately. I had to guess on most.}}
 \label{tab:learning_hyperparams}
 \begin{center}
 \begin{tabular}{|r|l|l|l|l|l|l|}
 \hline
        & \multicolumn{3}{c|}{\bf Weight}     &  \multicolumn{3}{c|}{\bf Bias}       \\
 \cline{2-7}
-       & gaus   & LR-mult & decay &  const  & LR  & decay \\
+       & Gaussian Std. Dev.   & Local Response-multiplier & decay &  const  & Local Response  & decay \\
 \hline
 conv1  & .01    & 1       & y     &  0      & 2   & n     \\
 conv2  & .01    & 1       & y     &  1      & 2   & n     \\
