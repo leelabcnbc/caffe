@@ -72,14 +72,14 @@ task and target task decreases.
 
 We have noted the curious tendency of Gabor features to show up in the first layer of neural networks trained on natural images for a large range of network architectures and cost functions. We say these features are general if they are useful for many different tasks or specific if they are useful only for a few. We can measure the specificity of a set of features by training the set on one task \dA and then using the feature set for another task \dB.
 
-Of course, this definition depends on the similarity, or distance, between \dA and \dB. In this paper, we take tasks \dA and \dB to be classifying different, non-overlapping subsets of a particular dataset.  These subsets could be chosen such that they are similar (e.g. by randomly splitting a large dataset into two smaller datasets), or they could be chosen to be different (e.g. by choosing the subsets to be maximally different). 
+Of course, this definition depends on the similarity (distance) between \dA and \dB. In this paper, we take tasks \dA and \dB to be classifying different, non-overlapping subsets of a particular dataset.  These subsets could be chosen such that they are similar (e.g. by randomly splitting a large dataset into two smaller datasets), or they could be chosen to be different (e.g. by choosing the subsets to be maximally different). 
 %This is only one possible way of sampling tasks \dA and \dB.
 
 The dataset we use is from the ImageNet Large Scale Visual Recognition Challenge 2012 (ILSVRC2012) \citep{imagenet_cvpr09}. It contains 1,281,167 labeled training images and 50,000 test images. Each image in the training and validation sets is labeled with one of 1000 classes.
 
 To create tasks \dA and \dB, we randomly split the 1000 classes into two groups, \dA and \dB, each containing 500 classes and approximately half of the data, or about 645,000 examples each. We train one convolutional net on the half-dataset \dA and one on the half-dataset \dB. These networks, which we call \net{baseA} and \net{baseB}, are shown in the top two positions of Figure~\ref{fig:transfer}.
 
-All layer sizes in \net{baseA} and \net{baseB}, as well as the networks described later in this section are the same, namely the sizes described in Section~\ref{} except for the last softmax layer, which outputs 500 classes instead of 1000.
+All layer sizes in \net{baseA} and \net{baseB}, as well as the networks described later in this section, are the same, namely the sizes described in Section~\ref{} \todo{fill in this empty ref} except for the last softmax layer, which outputs 500 classes instead of 1000.
 
 
 We then choose an $n$ from $\{1, 2, \ldots, 7\}$ and train several networks. To make the discussion more concrete, let's pick for now $n=3$ (Figure~\ref{fig:transfer} also shows the $n=3$ case). First we train 
