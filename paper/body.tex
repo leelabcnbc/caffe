@@ -5,30 +5,36 @@
 
 \section{Introduction}
 
-It has recently become possible to train much larger artificial neural networks than ever before. 
-
-\editbox{write some intro fluff here vvvv}
-
-Recent progress, enabled by Convnets \cite{LeCun89}
-
-these new large networks are breaking previous performance records handily. Also unsupervised work: \cite{Le-2011-ICA} trained large unsupervised network using...
-
-Most of these use combinations of learned convolutional features, pooling over fixed local regions, and normalization of responses based on the responses of other units in the same layer (a basic form of inhibition or local competition, which has a similar effect to ``explaining away'')
-
-(speculation) It is interesting to think that, while we previously fought in a regime where mostly we tried to push performance, and most small performance gains well understood -- that is, the field of machine learning was largely a art of synthesizing functions that worked better and better -- we may soon be entering an era of the field where we have things that are so large and work so well that the performance will outpace our understanding. This will push the  field into a decidedly different regime, one of almost observational science where we merely poke things that work magically well to slowly remove their mystique.
-
-Grand speculation aside, here we seek to understand a few properties of one of the larger class of convolutional neural networks trained using supervised backprop.
-
-((examples))
-((diff datasets))
-((but same features!))
-
-(((( two Gabor features from very different networks ))))
-
-\editbox{write some intro fluff here ----}
-
-Many trained networks reported recently in the literature --- unsupervised and supervised alike --- exhibit a curious aspect in common: they all learn features that resemble Gabor filters in the first layer (see Figure~\ref{fig:layer1}) \todo{fix broken figure ref here}. The appearance of these Gabor filters is so common that to obtain anything else on a natural-image dataset causes suspicion of poorly chosen hyperparameters or a software bug. 
+Many trained neural networks reported recently in the literature exhibit a curious aspect in common: they all learn features that resemble Gabor filters in the first layer.
+% TODO: (see Figure~\ref{fig:layer1}) \todo{fix broken figure ref here}.
+The appearance of these Gabor filters is so common that to obtain anything else on a natural-image dataset causes suspicion of poorly chosen hyperparameters or a software bug. 
 %In fact, this paper's authors are now used to checking for Gabor features in the first layer simply to assure ourselves that the training is at least partially working.
+This phenomenon occurs not only for different datasets, but even with very different training objectives, from supervised image classification \citep{Krizhevsky-2012} to unsupervised sparse representation learning\cite{Le-2011-ICA}.
+
+% Deleted fluff
+
+%It has recently become possible to train much larger artificial neural networks than ever before. 
+%
+%\editbox{write some intro fluff here vvvv}
+%
+%Recent progress, enabled by Convnets \cite{LeCun89}
+%
+%these new large networks are breaking previous performance records handily. Also unsupervised work: \cite{Le-2011-ICA} trained large unsupervised network using...
+%
+%Most of these use combinations of learned convolutional features, pooling over fixed local regions, and normalization of responses based on the responses of other units in the same layer (a basic form of inhibition or local competition, which has a similar effect to ``explaining away'')
+%
+%(speculation) It is interesting to think that, while we previously fought in a regime where mostly we tried to push performance, and most small performance gains well understood -- that is, the field of machine learning was largely a art of synthesizing functions that worked better and better -- we may soon be entering an era of the field where we have things that are so large and work so well that the performance will outpace our understanding. This will push the  field into a decidedly different regime, one of almost observational science where we merely poke things that work magically well to slowly remove their mystique.
+%
+%Grand speculation aside, here we seek to understand a few properties of one of the larger class of convolutional neural networks trained using supervised backprop.
+%
+%((examples))
+%((diff datasets))
+%((but same features!))
+%
+%(((( two Gabor features from very different networks ))))
+%
+%\editbox{write some intro fluff here ----}
+
 
 Because finding Gabor features on the first layer seems to occur regardless of the exact cost function and natural image dataset used, we may call these these features \emph{general}. On the other hand, we know that the last layer of a trained network will depend greatly on the chosen \{network model, dataset\} combination. For example, for networks trained toward a supervised classification objective, each output unit will be specific to a particular class, at least to the extent that training is successful. In this sense, let's say that the last layer features are \emph{specific}. So far these terms are only intuitively defined, but we shall provide a candidate for a more rigorous definition below. 
 If these Gabor features of the first features are general, and the features of the last layer are specific, there must be a transition from general to specific somewhere in the network. This observation raises a few questions:
@@ -39,24 +45,18 @@ If these Gabor features of the first features are general, and the features of t
 	\item Where does this transition take place: near the bottom, middle, or top of the network?
 \end{itemize}
 
-Once one has general features from some layer of a base network trained on a dataset, a common trick is to repurpose the features, or \emph{transfer} them, to another task \todo{cites}. The process that is usually followed is to create a new network containing as its first $n$ layers the first $n$ layers of the base network, with the rest of the layers in the new network randomly initialized and trained toward the second task. When following this path, one can choose to backpropagate the errors from the new task into the base (copied) features to \emph{fine-tune} them to the new task, or they can be left frozen or ``locked'', meaning that they do not change during training on the new task. In cases where the second dataset is smaller than the first, fine-tuning the base features may result in overfitting, so the features are often left frozen. On the other hand, if the second dataset is large enough, the base features can be fine-tuned to the new task. Of course, if the second dataset is very large, there would be little need to transfer because the base filters could just be learned from scratch. These two domains --- fine-tuned features or frozen features --- are distinct and are compared later.
+Once one has general features from some layer of a \emph{base} network trained on a dataset, a common trick is to repurpose the features, or \emph{transfer} them, to another task \citep{donahue+jia-2013-arxiv}. The usual course is to create a new network containing as its first $n$ layers the first $n$ layers of the base network, with the rest of the layers in the new network randomly initialized and trained toward the second \emph{target} task. When following this path, one can choose to backpropagate the errors from the new task into the base (copied) features to \emph{fine-tune} them to the new task, or they can be left frozen, meaning that they do not change during training on the new task. In cases where the target dataset is smaller than the base dataset, fine-tuning the base features may result in overfitting, so the features are often left frozen. On the other hand, if the target dataset is large enough, the base features can be fine-tuned to the new task. Of course, if the target dataset is very large, there would be little need to transfer because the base filters could just be learned from scratch. We compare results from each of these two domains --- fine-tuned features or frozen features --- in a later section.
 
 In this paper we make several contributions:
 
 \begin{enumerate}
 \item We propose one way of answering the first question above through the degree to which features from one dataset transfer to another (Section~\ref{sec:definition}). We then train a large convnet on the ImageNet dataset and use our definition of generality to examine the general to specific transition (Section~\ref{sec:experiments}).
-\item We experimentally show that the difficulty in using transferred features can be decomposed into two separate issues: optimization difficulties due to breaking co-adaptation between neurons on neighboring layers and the specificity of the features themselves. In different regions of the network, different effects dominate.
-\item Finally, we find an interesting effect where fine-tuning filters from a different dataset can lead to better solutions, even when the datasets are the same size and training time is identical.
+Others have loosely addressed the question of generaltiy by showing how features from higher layers in a convnet can be transferred to new tasks \cite{donahue+jia-2013-arxiv} but here we further characterize the general to specific transition, which yields the next three results.
+\item We experimentally show that the difficulty in using transferred features can be decomposed into two separate issues: optimization difficulties due to breaking co-adaptation between neurons on neighboring layers and the specificity of the features themselves. In different regions of the network, we show how different effects dominate (Section~\ref{sec:experiments_ab}).
+\item We show how the transferability gap grows as the distance between base
+task and target task increases, and we compare both types of transfer to using random filters, which we find not to work as well on the large ImageNet dataset as for smaller datasets, as reported by \cite{Jarrett-ICCV2009}.
+\item Finally, we find an interesting effect where fine-tuning filters from a different dataset can lead to better solutions, even when the datasets are the same size and training time is identical (Section~\ref{sec:experiments_ab}).
 \end{enumerate}
-
-
-
-
-\edit{talk a little about related work?}
-
-subsection{Related Work (no heading, just group with Intro?)}
-
-Others have loosely addressed the question of generaltiy by showing how features from layers 5/6/7 can be transferred to new tasks \cite{donahue+jia-2013-arxiv} but here we're aiming for something slightly different: to observe the general to specific transition more directly, if possible.
 
 
 
