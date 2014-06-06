@@ -95,8 +95,8 @@ Then we define and train the following two networks
 Finally, we also train fine-tuned versions of the two above networks:
 
 \begin{itemize}
-\item A \emph{selffer} network \net{B3B+} just like \net{B3B}, but where all layers learn
-\item A \emph{transfer} network \net{A3B+} just like \net{A3B}, but where all layers learn
+\item A \emph{selffer} network \net{B3B^+} just like \net{B3B}, but where all layers learn
+\item A \emph{transfer} network \net{A3B^+} just like \net{A3B}, but where all layers learn
 \end{itemize}
 
 Figure~\ref{fig:transfer} shows the networks created for $n = 3$, but we repeated this process for all $n$ in $\{1, 2, \ldots, 7\}$\footnote{Note that $n=8$ doesn't make sense in any case: \net{B8B} is just \net{baseB}, \net{R8B} is just a completely retrained version of \net{baseB}, and \net{A8B} would have no hope of working, because nothing would be trained and the 500 softmax neurons would not match between \dA and \dB.} and in both directions, i.e. transferring from \dA to \dB and \dB to \dA.
@@ -207,7 +207,7 @@ Our base model attains a final top-1 error on the validation set of 42.5\%, abou
 \label{fig:results}
 \end{figure}
 
-The results of all transfer learning experiments are shown in condensed form in Figure~\ref{fig:results}. Each dot in the figure represents the average accuracy over the validation set for an entire trained network. The black dots above $n=0$ represent the accuracy of \net{baseA} or \net{baseB}. There are eight points, because we made four separate random \net{A}/\net{B} splits. Each dark blue dot represents an \net{AnA} network\footnote{Actually these dots represent \net{AnA} nets or \net{BnB} nets, the statistics of which are equivalent, because in both cases the net is trained on the same random 500 classes. To simplify notation, we'll just calling these \net{AnA} networks. Similarly, we've aggregated the \net{BnA} and \net{AnB} networks and just call them \net{BnA}}, that is, a network that was trained on dataset \dA, chopped off at layer $n$, and then whose upper layers were reinitialized and retrained toward dataset \dA while the lower layers remained frozen. The light blue points represent \net{AnA+} networks, the same as \net{AnA} but where the lower layers were trained as well. Each dark red dot represents a \net{BnA} network, one whose first $n$ layers are copied from \net{baseB} and frozen, and then whose upper layers were randomly initialized and trained toward dataset \dA. The light red points represent \net{BnA+} networks where all layers were fine-tuned.
+The results of all transfer learning experiments are shown in condensed form in Figure~\ref{fig:results}. Each dot in the figure represents the average accuracy over the validation set for an entire trained network. The black dots above $n=0$ represent the accuracy of \net{baseA} or \net{baseB}. There are eight points, because we made four separate random \net{A}/\net{B} splits. Each dark blue dot represents an \net{AnA} network\footnote{Actually these dots represent \net{AnA} nets or \net{BnB} nets, the statistics of which are equivalent, because in both cases the net is trained on the same random 500 classes. To simplify notation, we'll just calling these \net{AnA} networks. Similarly, we've aggregated the \net{BnA} and \net{AnB} networks and just call them \net{BnA}}, that is, a network that was trained on dataset \dA, chopped off at layer $n$, and then whose upper layers were reinitialized and retrained toward dataset \dA while the lower layers remained frozen. The light blue points represent \net{AnA^+} networks, the same as \net{AnA} but where the lower layers were trained as well. Each dark red dot represents a \net{BnA} network, one whose first $n$ layers are copied from \net{baseB} and frozen, and then whose upper layers were randomly initialized and trained toward dataset \dA. The light red points represent \net{BnA^+} networks where all layers were fine-tuned.
 
 In the top subplot plot we've shifted each type of point slightly to the left or write simply for visual clarity; if not for this shift they would all be shown directly above $n=1$, $n=2$, etc. and would overlap. In the bottom subplot we've average the results at each layer to show more clearly the overall trend and to highlight the three important effects.
 
@@ -221,54 +221,66 @@ It turns out we can conclude quite a lot from these results! In each of the foll
 
 We are not sure whether or not this effect has been previously observed in the literature. Certainly one would suspect that optimization difficulties might occur, but we do not believe it has been previously shown that such difficulties are worse in the middle of a network than near the bottom or top.
 
-\item The light blue \net{AnA+} points show that, as expected, when we allow the copied lower layer features to learn as well, we're able to find a solution just as good as the original solution. The whole network is trained, just initialized from a partial previous solution instead of completely randomly, which neither helps nor hurts performance.
+\item The light blue \net{AnA^+} points show that, as expected, when we allow the copied lower layer features to learn as well, we're able to find a solution just as good as the original solution. The whole network is trained, just initialized from a partial previous solution instead of completely randomly, which neither helps nor hurts performance.
 
 \item The dark red \net{BnA} points show the effect we set out to measure in the first place: the transferability of features from one network to another at each layer. Layers one and two transfer almost perfectly from \net{B} to  \net{A}, giving evidence that at least for our two tasks, not only are the gabor features general, but the second layer features are as well. Layer three shows a slight drop, and layers 4-7 show a more significant drop in performance. Thanks to the \net{ANA} points, we can tell that this drop is from a combination of two separate effects: the drop from lost co-adaptation \emph{and} the drop from features which are less and less general. On layers 3, 4, and 5, the first effect dominates, whereas on layers 6 and 7 the first effect diminishes and the specificity of representation dominates the drop in performance.
 
 Although examples of successful feature transfer have been reported elsewhere in the literature, to our knowledge these results have been limited to noticing that transfer from a given layer is much better than chance, e.g. noticing that the \net{BnA} points are much better than chance level performance (.002 for 500 classes). We believe this is the first time that the extent to which transfer is successful has been carefully quantified layer by layer and that the two separate effects have been decoupled, showing that each effect dominates in part of the regime.
 
-\item The light red \net{BnA+} points show perhaps the most surprising effect: that transferred features followed by fine-tuning result in networks that generalize better than those trained directly on the target dataset. We suspected that this effect might be simply due to longer total training time (450k base + 450k fine-tuned for \net{BnA+} vs. 450k for \net{baseA}), but this cannot be the case, because the \net{AnA+} networks are also trained for the same longer length of time and do not exhibit this boost in performance.
+\item The light red \net{BnA^+} points show perhaps the most surprising effect: that transferred features followed by fine-tuning result in networks that generalize better than those trained directly on the target dataset. We suspected that this effect might be simply due to longer total training time (450k base + 450k fine-tuned for \net{BnA^+} vs. 450k for \net{baseA}), but this cannot be the case, because the \net{AnA^+} networks are also trained for the same longer length of time and do not exhibit this boost in performance.
 
-Thus, the most likely explanation is that even after 450k iterations of fine tuning (beginning with completely random top layers), the effects of having seen the first (different) dataset still linger, boosting generalization performance. We found the fact that this effect can linger through so much retraining surprising. Further, this lingering boon to generalization seems not to depend very much on how much of the first network we keep: keeping anywhere from one to seven layers produces improved performance, with slightly better performance as we keep more layers. The average boost across layers 1 to 7 is 1.6\% over the base case, and the average if we keep at least five layers is 2.1\%.\footnote{It is somewhat strange for us to average the performance over several layers. We'd prefer to average many runs at the same layer, but each point is rather computationally expensive to obtain. The \net{BnA+} point at }
-
- (anywhere from 3 to 7 layers works to give an improvement of 1.8% on average).
-
-the light red points vs. black points), but 
-
-is 
-
-any layer...
-
-I thought this latter point could be due to something not so interesting, like the longer total training time, but
- - there is no improvement at all in the last 15% of the training for the black points, so running it twice as long would probably not help
- - the light blue points have been trained just as long as light red (450k train + 450k fine-tune).
-
-
-
+Thus, the most likely explanation is that even after 450k iterations of fine tuning (beginning with completely random top layers), the effects of having seen the alternate dataset still linger, boosting generalization performance. We found the fact that this effect can linger through so much retraining surprising. Further, this lingering boon to generalization seems not to depend very much on how much of the first network we keep to initialize the second network: keeping anywhere from one to seven layers produces improved performance, with slightly better performance as we keep more layers. The average boost across layers 1 to 7 is 1.6\% over the base case, and the average if we keep at least five layers is 2.1\%.\footnote{It is somewhat strange for us to aggregate the performance over several layers. Indeed, we'd prefer to average many runs at the same layer, but each point is rather computationally expensive to obtain so we have very few as of the time of this submission. However, we think some aggregation is informative, because the performance at each layer is based on completely different random draws of initialization weights. Thus, the fact that layers 5, 6, and 7 result in almost identical performance across random draws is at least somewhat indicative that multiple runs at a given layer would result in similar performance.} The degree of performance boost is shown in Table~\ref{tab:boost}.
 
 \end{enumerate}
 
+% Computed like this (set LAYER = {1,3,5})
+%
+% LAYER = 1
+% nested = [list(mb_selffer_ft[ii]['valid_top1_acc']) for ii in range(LAYER,8)]
+% case_selffer = array([item for sublist in nested for item in sublist])
+% 
+% nested = [list(mb_transfer_ft[ii]['valid_top1_acc']) for ii in range(LAYER,8)]
+% case_transfer = array([item for sublist in nested for item in sublist])
+% 
+% print 'transfer - selffer', case_transfer.mean() - case_selffer.mean()
+% print 'transfer - base',    case_transfer.mean() - case_base.mean()
+% 
+% #print stats.ttest_rel(case_base, case_selffer)
+% print 'base    vs selffer ', stats.ttest_ind(case_base, case_selffer)
+% #print stats.ttest_rel(case_base, case_transfer)
+% print 'base    vs transfer', stats.ttest_ind(case_base, case_transfer)
+% print 'selffer vs transfer', stats.ttest_ind(case_selffer, case_transfer)
+
+
 \begin{table}[t]
-\caption{Convolutional Network architecture sizes and hyperparameters}
-\label{tab:network_architecture}
+\caption{Performance accuracy boost of transfer + fine-tuning \net{BnA^+} over controls. All differences are significant at the $p < .001$ level.}
+\label{tab:boost}
 \begin{center}
-\begin{tabular}{|r|l|l|l|l|l|l|l|l|l|}
+\begin{tabular}{|c|c|c|}
 \hline
-       &      & filter & number  &        &        &     &         & Maxpool        & LRN (size,        \\
-name   & pad  & size   & outputs & groups & stride & R/S & Dropout & (width,stride) & $\alpha$,$\beta$) \\
+           & mean boost  & mean boost \\
+layers     & over        & over \\
+aggregated & \net{baseA} & selffer \net{AnA^+} \\
 \hline
-conv1  &      & 11x11  & 96      & 1      & 4      & R   &         & 3, 2           & 5,0.0001,0.75     \\
-conv2  & 2    & 5x5    & 256     & 2      & 1      & R   &         & 3, 2           & 5,0.0001,0.75     \\
-conv3  & 1    & 3x3    & 384     & 1      & 1      & R   &         &                &                   \\
-conv4  & 1    & 3x3    & 384     & 2      & 1      & R   &         &                &                   \\
-conv5  & 1    & 3x3    & 256     & 2      & 1      & R   &         & 3, 2           &                   \\
-fc6    &      &        & 4096    & 1      &        & R   & *       &                &                   \\
-fc7    &      &        & 4096    & 1      &        & R   & *       &                &                   \\
-fc8    &      &        & 1000    & 1      &        & S   &         &                &                   \\
+1-7        & 1.6\%       & 1.4\% \\
+3-7        & 1.8\%       & 1.4\% \\
+5-7        & 2.1\%       & 1.7\% \\
 \hline
 \end{tabular}
 \end{center}
 \end{table}
+
+
+
+
+
+
+
+
+
+\section{Conclusions}
+
+
 
 Practical conclusions
 
@@ -279,9 +291,6 @@ Results 2 and 4 imply that those wishing to transfer features from one dataset t
 
 
 If you do have a big second dataset:
-
-
-
 
 
 
