@@ -87,65 +87,36 @@ In this paper we first define one way of quantifying a layer's degree of general
 \
 \pard\tx560\tx1120\tx1680\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
 
-\b \cf0 Definition of Generality vs. Specificity\
+\b \cf0 Defining Generality vs. Specificity\
 
 \b0 \
+Earlier we noted the curious tendency of gabor features to show up in the first layer of neural networks trained on natural images for a large range of network architectures and cost functions. We say these features are general if they are useful for many different tasks or specific if they are useful only for a few. We can measure the specificity of a set of features by training it on one task A and then using it for another task B.\
 \
-< figure >\
+Of course, this definition depends on the distance between A and B. In this paper we take tasks A and B to be classifying different non-overlapping subsets of a particular dataset, ImageNet  \\edit\{while varying the semantic distance between A and B\}. This is only one possible way of sampling tasks A and B.\
 \
+More concretely, we use the 1,281,167 labeled training images and 50,000 test images from the ImageNet Large Scale Visual Recognition Challenge 2012 (ILSVRC2012) \\cite\{deng2009imagenet:-a-large-scale-hierarchical\}. Each image in the training and validation sets is labeled with one of 1000 classes.\
 \
+To create tasks A and B, we randomly split the 1000 classes into two groups, A and B, each containing 500 classes and approximately half of the data, or about 645,000 examples each. We train one convolutional net on the half-dataset A and one on the half-dataset B. These networks, which we call $baseA$ and $baseB$, are shown in the top two positions of Figure \\ref\{transfer\}.\
 \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
-\cf0 \
-\
-\
-\pard\tx560\tx1120\tx1680\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
-\cf0 \
+All layer sizes in $baseA$ and $baseB$, as well as the networks described later in this section are the same, namely the sizes described in Section~\\ref\{\} except for the last softmax layer, which outputs 500 classes instead of 1000.\
 \
 \
+We then choose an $N$ from $\\\{1, 2, \'85, 7\\\}$ and train several networks. To make the discussion clearer, let's say we pick $N=3$ (as in Figure~\\ref\{transfer\}). First we train \
 \
+ - A control network $R3B$ with the first $3$ layers fixed to random filters and all higher layers trained to classify images from dataset B.\
 \
+Then we define and train the following two networks\
 \
+ - A \\emph\{selffer\} network B3B where the first $3$ layers are copied from $baseB$ and frozen. The five higher layers are initialized randomly and trained toward dataset B. Here we're only using data from B and layers from a network $baseB$, that was trained on $B$. This may seem a little strange, but we actually need it as an additional control for the below transfer network.\
 \
+ - A \\emph\{transfer\} network A3B where the first $3$ layers are copied from $baseA$ and frozen. The five higher layers are initialized randomly and trained toward dataset B. Intuitively, here we're copying the first 3 layers from the wrong dataset, $A$,  and then trying to learn higher layer features on top of them to classify $B$. If this works well, we'll say that those first three layers are general, at least with respect to $B$, and if not, we'll say they are specific to dataset $A$\
 \
-******************\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
-\cf0 We (ML folks) have recently had good luck training large hierarchical models for vision, on a few different data sets and with a few different network models.\
+Finally, we also train fine-tuned versions of the two above networks:\
 \
-Assumption 1: The first layer often converges to gabor-like features not just for a single \{network model, dataset\} combination, but for many combinations of the two. In this sense, let's call the layer 1 gabor features "generic".\
+ - A \\emph\{selffer\} network B3B+ just like B3B, but where all layers learn\
+ - A \\emph\{transfer\} network A3B+ just like A3B, but where all layers learn\
 \
-Assumption 2: On the other hand, the last layer of a network will depend greatly on the \{network model, dataset\} combination. For example, for networks trained toward a supervised classification objective, each output unit will be specific to a particular class (to the extent that training is successful). In this sense, let's call the last layer features "specific"\
-\
-From A1 and A2 we know there must be a transition at some point from generic to specific.\
-\
-This raises the following questions: in a given deep network, where does this transition take place? Is it a sudden transition from layer n to n+1, or is it spread over several layers? More fundamentally, how should we even quantify the degree of specificity?\
-\
-I took a stab at answering some of these questions for a particular \{model, dataset\} combination: an eight layer Alex-style convnet trained on Imagenet. Others have loosely addressed this question by showing how features from layers 5/6/7 can be transferred to new tasks \\cite\{decaf\}, but here I'm aiming for something slightly different: to observe the generic -> specific transition more directly, if possible.\
-\pard\tx560\tx1120\tx1680\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
-\cf0 ******************\
-\
-\
-\
-\
-\
-\
-\
-\
-\
-\
-\
-\
-\
-\
-\
-\
-\
-\
-\
-\
-\
-\
-\
+Figure~\\ref\{transfer\} shows the networks created for $N = 3$, but we repeated this process for all $N$ in $\\\{1, 2, \'85, 7\\\}$\\footnote\{Note that $N=8$ doesn't make sense in any case: B8B is just baseB, R8B is just a completely retrained version of baseB, and A8B would have no hope of working, because nothing would be trained and the 500 softmax neurons would not match between A and B.\} and in both directions, i.e. transferring from A to B and B to A.\
 \
 \
 \
@@ -196,8 +167,8 @@ For the bulk of the experiments in this paper, the master learning rate was star
 Because occupying a whole GPU for this long was cumbersome, we also devised a set of hyperparameters to allow faster learning by boosting the learning rate by 25% to 0.0125, annealing by a factor of 10 after only 64,000 iterations, and stopping after 200,000 iterations. These selections were made after looking at the learning curves for the base case and estimating at which points in each region of constant learning rate the learning had plateaued and thus annealing could take place.  A typical learning curve is shown in Figure~\\ref\{typical_learning\}.\
 \
 \
-Fig \{typical_learning)\
-< make this once reduced-1300-2 is done >\
+Figure \{typical_learning\}\
+< make this figure, if important, once reduced-1300-2 run is done >\
 \
 \
 Our base model attains a final top-1 error on the validation set of 42.5%, about the same as the 42.9% reported by \\cite\{donahue2013decaf:-a-deep-convolutional\} and 1.8% worse than \\cite\{krizhevsky2012imagenet-classification-with-deep\}, probably due to the few minor training differences. We checked these values only to demonstrate that the network was converging reasonably. Our goal is not to improve the state of the art, but to investigate properties of transfer. \
