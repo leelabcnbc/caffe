@@ -89,7 +89,7 @@ We then choose an $n$ from $\{1, 2, \ldots, 7\}$ and train several networks. To 
 Then we define and train the following two networks
 
 \begin{itemize}
-\item A \emph{selffer} network \net{B3B} where the first $3$ layers are copied from \net{baseB} and frozen. The five higher layers are initialized randomly and trained toward dataset \dB. Here we're only using data from \dB and layers from a network \net{baseB}, that was trained on \dB. This may seem a little strange, but we actually need it as an additional control for the below transfer network.
+\item A \emph{selfer} network \net{B3B} where the first $3$ layers are copied from \net{baseB} and frozen. The five higher layers are initialized randomly and trained toward dataset \dB. Here we're only using data from \dB and layers from a network \net{baseB}, that was trained on \dB. This may seem a little strange, but we actually need it as an additional control for the below transfer network.
 
 \item A \emph{transfer} network \net{A3B} where the first $3$ layers are copied from \net{baseA} and frozen. The five higher layers are initialized randomly and trained toward dataset \dB. Intuitively, here we're copying the first $3$ layers from the wrong dataset, \dA,  and then trying to learn higher layer features on top of them to classify \dB. If this works well, we'll say that those first three layers are general, at least with respect to \dB, and if not, we'll say they are specific to dataset \dA
 \end{itemize}
@@ -97,7 +97,7 @@ Then we define and train the following two networks
 Finally, we also train fine-tuned versions of the two above networks:
 
 \begin{itemize}
-\item A \emph{selffer} network \net{B3B^+} just like \net{B3B}, but where all layers learn
+\item A \emph{selfer} network \net{B3B^+} just like \net{B3B}, but where all layers learn
 \item A \emph{transfer} network \net{A3B^+} just like \net{A3B}, but where all layers learn
 \end{itemize}
 
@@ -243,6 +243,7 @@ As mentioned earlier, we did two sets of experiments. The main experiment using 
 \includegraphics[width=1\linewidth]{plots/result_transfer_lines_crop.pdf}
 \end{center}
 \caption{Accuracy of each treatment and control. \emph{Top panel:} Raw data. \emph{Bottom panel}: Lines connect the medians of each treatment. Shaded areas and text highlight key takeaway messages. \todo{This is the min. required if we explain the figure in the main text.}
+\todo{Here and in all figs, remove one f from selfer}
 }
 \label{fig:results}
 \end{figure}
@@ -300,7 +301,7 @@ Thus, the most likely explanation is that even after 450k iterations of fine tun
 \hline
            & mean boost  & mean boost \\
 layers     & over        & over \\
-aggregated & \net{baseA} & selffer \net{AnA^+} \\
+aggregated & \net{baseA} & selfer \net{AnA^+} \\
 \hline
 1-7        & 1.6\%       & 1.4\% \\
 3-7        & 1.8\%       & 1.4\% \\
