@@ -45,17 +45,18 @@ If these Gabor features of the first features are general, and the features of t
 	\item Where does this transition take place: near the bottom, middle, or top of the network?
 \end{itemize}
 
-Once one has general features from some layer of a \emph{base} network trained on a dataset, a common trick is to repurpose the features, or \emph{transfer} them, to another task \citep{caruana95,Bengio+al-AI-2011-small,UTLC+DL+tutorial-2011-small,donahue+jia-2013-arxiv}. The usual course is to create a new network containing as its first $n$ layers the first $n$ layers of the base network, with the rest of the layers in the new network randomly initialized and trained toward the second \emph{target} task. When following this path, one can choose to backpropagate the errors from the new task into the base (copied) features to \emph{fine-tune} them to the new task, or they can be left frozen, meaning that they do not change during training on the new task. In cases where the target dataset is smaller than the base dataset, fine-tuning the base features may result in overfitting, so the features are often left frozen. On the other hand, if the target dataset is large enough, the base features can be fine-tuned to the new task. Of course, if the target dataset is very large, there would be little need to transfer because the base filters could just be learned from scratch. We compare results from each of these two domains --- fine-tuned features or frozen features --- in a later section.
+Once one has general features from some layer of a \emph{base} network trained on a dataset, a common trick is to repurpose the features, or \emph{transfer} them, to another task \citep{caruana95,Bengio+al-AI-2011-small,UTLC+DL+tutorial-2011-small,donahue+jia-2013-arxiv}. The usual course is to create a new network containing as its first $n$ layers the first $n$ layers of the base network, with the rest of the layers in the new network randomly initialized and trained toward the second \emph{target} task. When following this path, one can choose to backpropagate the errors from the new task into the base (copied) features to \emph{fine-tune} them to the new task, or they can be left \emph{frozen}, meaning that they do not change during training on the new task. In cases where the target dataset is smaller than the base dataset, fine-tuning the base features may result in overfitting, so the features are often left frozen. On the other hand, if the target dataset is large enough, the base features can be fine-tuned to the new task. Of course, if the target dataset is very large, there would be little need to transfer because the base filters could just be learned from scratch. We compare results from each of these two techniques --- fine-tuned features or frozen features --- below.
 
 In this paper we make several contributions:
 
 \begin{enumerate}
-\item We propose one way of answering the first question above through the degree to which features from one dataset transfer to another (Section~\ref{sec:definition}). We then train a large convnet on the ImageNet dataset and use our definition of generality to examine the general to specific transition (Section~\ref{sec:experiments}).
-Others have loosely addressed the question of generality by showing how features from higher layers in a convnet can be transferred to new tasks \cite{donahue+jia-2013-arxiv} but here we systematically characterize the general to specific transition, which yields the next three results.
-\item We experimentally show that the difficulty in using transferred features can be decomposed into two separate issues: optimization difficulties due to breaking co-adaptation between neurons on neighboring layers and the specificity of the features themselves. In different regions of the network, we show how different effects dominate (Section~\ref{sec:experiments_ab}).
-\item We show how the transferability gap grows as the distance between base
-task and target task increases, and we compare both types of transfer to using random filters, which we find not to work as well on the large ImageNet dataset as for smaller datasets, as reported by \cite{Jarrett-ICCV2009} (Section~\ref{sec:experiments_random_nm}).
-\item Finally, we find an interesting effect where fine-tuning filters from a different dataset can lead to better solutions, even when the datasets are the same size and training time is identical (Section~\ref{sec:experiments_ab}).
+\item We introduce a way to quantify the degree to which a particular layer is general or specific: how well features at a certain layer transfer from one dataset to another (Section~\ref{sec:definition}). We test this proposed measure on a large convnet trained on the ImageNet dataset. These experiments also reveal the transition from general to specific layers (Section~\ref{sec:experiments}).
+Others have loosely addressed the question of generality by showing how features from higher layers in a convnet can be transferred to new tasks \citep{donahue+jia-2013-arxiv}, but here we further characterize the general to specific transition, which yields the next three results.
+\item We experimentally show two separate issues that cause performance declines from transferred features: optimization difficulties due to breaking co-adaptation between neurons on neighboring layers, and the specificity of the features themselves. We show how different effects dominate at different layers of the network (Section~\ref{sec:experiments_ab}).
+\item We show how the transferability gap grows as the similarity between base
+task and target task decreases.
+\item We further compare both frozen and fine-tuned transfer to using random filters, which we find not to work as well on the large ImageNet dataset as they have been reported to \citep{Jarrett-ICCV2009} for smaller datasets (Section~\ref{sec:experiments_random_nm}).
+\item Finally, we find an interesting effect where fine-tuning filters from a different dataset can lead to better generalization, even when the datasets are the same size and training time is identical (Section~\ref{sec:experiments_ab}).
 \end{enumerate}
 
 
@@ -66,13 +67,14 @@ task and target task increases, and we compare both types of transfer to using r
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Generality vs. Specificity as transfer from one dataset to another}
+\section{Generality vs. specificity measured as transfer performance}
 \label{sec:definition}
 
-We have noted the curious tendency of Gabor features to show up in the first layer of neural networks trained on natural images for a large range of network architectures and cost functions. We say these features are general if they are useful for many different tasks or specific if they are useful only for a few. We can measure the specificity of a set of features by training it on one task \dA and then using it for another task \dB.
-Of course, this definition depends on the distance between \dA and \dB. In this paper we take tasks \dA and \dB to be classifying different non-overlapping subsets of a particular dataset,
+We have noted the curious tendency of Gabor features to show up in the first layer of neural networks trained on natural images for a large range of network architectures and cost functions. We say these features are general if they are useful for many different tasks or specific if they are useful only for a few. We can measure the specificity of a set of features by training the set on one task \dA and then using the feature set for another task \dB.
+Of course, this definition depends on the similarity between \dA and \dB. In this paper we take tasks \dA and \dB to be classifying different non-overlapping subsets of a particular dataset.
+These subsets can be chosen in particular ways so that they are as similar to or as different from each other as possible.
 %  \edit{while varying the semantic distance between \dA and \dB?} This is only one possible way of sampling tasks \dA and \dB.
-%The dataset we use is from the
+The dataset we use is
 ImageNet, as released in the Large Scale Visual Recognition Challenge 2012 (ILSVRC2012) \citep{imagenet_cvpr09}. It contains 1,281,167 labeled training images and 50,000 test images, and each image in the training and validation sets is labeled with one of 1000 classes.
 
 To create tasks \dA and \dB, we randomly split the 1000 classes into two groups, \dA and \dB, each containing 500 classes and approximately half of the data, or about 645,000 examples each. We train one convolutional net on the half-dataset \dA and one on the half-dataset \dB. These networks, which we call \net{baseA} and \net{baseB}, are shown in the top two positions of Figure~\ref{fig:transfer}.
