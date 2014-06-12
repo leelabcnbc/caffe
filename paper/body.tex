@@ -50,13 +50,12 @@ Once one has general features from some layer of a \emph{base} network trained o
 In this paper we make several contributions:
 
 \begin{enumerate}
-\item We introduce a way to quantify the degree to which a particular layer is general or specific: how well features at a certain layer transfer from one dataset to another (Section~\ref{sec:definition}). We test this proposed measure on a large convnet trained on the ImageNet dataset. These experiments also reveal the transition from general to specific layers (Section~\ref{sec:experiments}).
-Others have loosely addressed the question of generaltiy by showing how features from higher layers in a convnet can be transferred to new tasks \citep{donahue+jia-2013-arxiv}, but here we systematically characterize the general to specific transition, which yields the next three results.
-\item We experimentally show two separate issues that cause performance declines from transferred features: optimization difficulties due to breaking co-adaptation between neurons on neighboring layers, and the specificity of the features themselves. We show how different effects dominate at different layers of the network (Section~\ref{sec:experiments_ab}).
-\item We show how the transferability gap grows as the similarity between base
-task and target task decreases. 
-\item We compare both frozen and fine-tuning transfer to using random filters: we find that random filters do not work as well on the large ImageNet dataset as they have been reported to for smaller datasets \citep{Jarrett-ICCV2009}.
-\item Finally, we find an interesting effect where fine-tuning filters from a different dataset can lead to better performance, even when the datasets are the same size and training time is identical (Section~\ref{sec:experiments_ab}).
+\item We propose one way of answering the first question above through the degree to which features from one dataset transfer to another (Section~\ref{sec:definition}). We then train a large convnet on the ImageNet dataset and use our definition of generality to examine the general to specific transition (Section~\ref{sec:experiments}).
+Others have loosely addressed the question of generaltiy by showing how features from higher layers in a convnet can be transferred to new tasks \cite{donahue+jia-2013-arxiv} but here we systematically characterize the general to specific transition, which yields the next three results.
+\item We experimentally show that the difficulty in using transferred features can be decomposed into two separate issues: optimization difficulties due to breaking co-adaptation between neurons on neighboring layers and the specificity of the features themselves. In different regions of the network, we show how different effects dominate (Section~\ref{sec:experiments_ab}).
+\item We show how the transferability gap grows as the distance between base
+task and target task increases, and we compare both types of transfer to using random filters, which we find not to work as well on the large ImageNet dataset as for smaller datasets, as reported by \cite{Jarrett-ICCV2009} (Section~\ref{sec:experiments_random_nm}).
+\item Finally, we find an interesting effect where fine-tuning filters from a different dataset can lead to better solutions, even when the datasets are the same size and training time is identical (Section~\ref{sec:experiments_ab}).
 \end{enumerate}
 
 
