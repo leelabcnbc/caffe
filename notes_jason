@@ -1,0 +1,4 @@
+Branching and merging strategy:
+ - My master mirrors upstream/master.
+ - jason_public is for my own changes that I wish to publish that have not yet been merged to upstream.
+ - Thus: only push master and jason_public to gh!
