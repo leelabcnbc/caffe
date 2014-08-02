@@ -182,7 +182,9 @@ struct CaffeNet {
   }
 
   // JBY: added
+  // Originally in 3ef036d2, but in https://github.com/BVLC/caffe/commit/5d584c27f062e9557aa920af6758b995f4094ed9 the interface was changed, so this needs to be updated before it will work again.
   // Forward through part of the network. Otherwise like Forward.
+  /*
   void ForwardPartial(list bottom_partial, list top_partial, int layer_start, int layer_end) {
     //vector<Blob<float>*>& input_blobs_partial = net_->input_blobs();
     vector<Blob<float>*>& bottom_blobs_partial = net_->bottom_vecs()[layer_start];
@@ -227,8 +229,9 @@ struct CaffeNet {
       }  // switch (Caffe::mode())
     }
   }
-  // JBY: added
+  */
 
+  /*
   void Backward_jby(list top_diff, list bottom_diff) {
     vector<Blob<float>*>& output_blobs = net_->output_blobs();
     vector<Blob<float>*>& input_blobs = net_->input_blobs();
@@ -254,6 +257,8 @@ struct CaffeNet {
     }
     // LOG(INFO) << "Start";
   }
+  */
+  // JBY: added
 
   void Forward() {
     net_->ForwardPrefilled();
@@ -300,6 +305,7 @@ struct CaffeNet {
 
   // JBY: added
   // Backward through part of the network. Otherwise like Forward.
+  /*
   void BackwardPartial(list top_diff, list bottom_diff, int layer_start, int layer_end) {
     LOG(INFO) << "*** BackwardPartial: start, end = " << layer_start << " " << layer_end;
     vector<Blob<float>*>& bottom_blobs_partial = net_->bottom_vecs()[layer_end];
@@ -346,6 +352,7 @@ struct CaffeNet {
       }  // switch (Caffe::mode())
     }
   }
+  */
   // JBY: added
 
   void ForwardPrefilled() {
@@ -440,10 +447,10 @@ BOOST_PYTHON_MODULE(_caffe) {
       "Net", boost::python::init<string, string>())
       .def(boost::python::init<string>())
       .def("_forward",          &CaffeNet::Forward)
-      .def("ForwardPartial",    &CaffeNet::ForwardPartial)
+    //.def("ForwardPartial",    &CaffeNet::ForwardPartial)
       .def("ForwardPrefilled",  &CaffeNet::ForwardPrefilled)
-      .def("Backward_jby",      &CaffeNet::Backward_jby)
-      .def("BackwardPartial",   &CaffeNet::BackwardPartial)
+    //.def("Backward_jby",      &CaffeNet::Backward_jby)
+    //.def("BackwardPartial",   &CaffeNet::BackwardPartial)
       .def("_backward",         &CaffeNet::Backward)
       .def("set_mode_cpu",      &CaffeNet::set_mode_cpu)
       .def("set_mode_gpu",      &CaffeNet::set_mode_gpu)
