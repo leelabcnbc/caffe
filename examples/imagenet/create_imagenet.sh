@@ -10,7 +10,7 @@ echo "Creating leveldb..."
 GLOG_logtostderr=1 $TOOLS/convert_imageset.bin \
     $HOME/imagenet2012/train/ \
     $DATA/train.txt \
-    imagenet_train_leveldb 1
+    ilsvrc12_train_leveldb 1
 
 GLOG_logtostderr=1 $TOOLS/convert_imageset.bin \
     $HOME/imagenet2012/val/ \
