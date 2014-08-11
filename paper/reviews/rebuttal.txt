@@ -1,4 +1,4 @@
-We would like to thank the reviewers for their encouraging feedback and insightful comments. All reviewers seemed to understand the study and its main results exactly as we interpreted them, so the below comments to reviewers are only minor.
+We would like to thank the reviewers for their encouraging feedback and insightful comments. Almost all of the reviewer comments were positive. Below we reply to one comment and the one suggestion for a potential change to the paper.
 
 
 
@@ -27,7 +27,7 @@ Admittedly, it was our choice to perform separation into natural vs. man-made su
 
 Starting at the largest subset "1000 n00001740 - entity" containing all 1000 classes and working backward, the first subset containing approximately 50% of the classes is "522 n00021939 - artifact, artefact", and the next is "410 n00004475 - organism, being". Fortunately for this study, these two subsets are mutually exclusive, the first became our "man-made" category and the second our "natural" category. Our only real influence was in choosing what to do with the remaining 1000-522-410=68 classes (Are cooked squash natural or man-made?). We looked at example images from each of the 68 classes and placed them into either "natural" or "man-made", as we thought best. In our code release, we provide a list of the 551 vs 449 classes in each category, and we highlight those 68 category decisions that were made manually.
 
-We initially left most of this discussion out of the paper to save space, but thanks to this comment, we realize that in its absence the split does seem arbitrary. Thus, we will include this discussion in the final version.
+We initially left most of this discussion out of the paper to save space, but thanks to this comment, we realize that in its absence the decisions do seem arbitrary. Thus, we will include this discussion in the final version.
 
 > It would be good to see a quantitative criterion analyzing
 > the correlation between the two factors raised in the
@@ -37,31 +37,12 @@ We initially left most of this discussion out of the paper to save space, but th
 
 This is an interesting idea, though we're not sure exactly what sort of quantitative criterion would be most helpful. Could you elaborate on what you envision? We would be happy to attempt and include such an analysis once we understand exactly what is being suggested.
 
-The review process is not amenable to back and forth discussion, so to maximize the value of a follow-up response, we'll describe one guess at which model may have been implied.
-
-We think this suggestion might be to create a model in which we regress a dependent variable, the transfer performance (difference or ratio vs the base case), onto two independent variables, (1) the similarity between task A and task B and (2) the chosen layer for transfer.
-
-In this interpretation we would need to come up with a measure for (1) that does not depend on the transfer performance itself. For example, one might get a handle on (1) by training a full 1000-class ImageNet network and then looking at the (A_i,B_j) element of the confusion matrix and then using the average over all classes in A and B as the similarity between task A and task B. This would give some notion of how similar A and B are, and we could then show how transfer is worse for more distance classes.
-
-We would be modeling a handful of points in three dimensions, and actually these are the points already shown in the bottom plot of Figure 3 (along the upper two lines with circles). These points are already plotted along (2), the layer-number axis, and all this new model would add would be a second independent axis, (1) "similarity between tasks A and B", which would separate the points along that dimension. Unfortunately, along that new dimension we would have data at *only two* locations, the distance value corresponding to random splits, and the distance value corresponding to the natural/man-made split.
-
-While we could fit such a model with only two points along one dimension, we are uncertain if one would gain insight from the model beyond what can already be obtained directly from Figure 3. If we had many more points along this new axis, the model could become interesting, but this would require quite a few more computationally expensive experiments and methods of generating tasks A and B with more finely varying semantic separation. Which is to say, we think this would be a great idea for future work!
-
-But, again, we are uncertain if this is the type of model the reviewer has suggested, so any clarification would be appreciated.
 
 
+To summarize, we plan to make the following changes for a final version of the paper:
 
-REVIEWER 2
+ - Add discussion of motivation behind creation of natural vs. man-made split, suggested by Reviewer 1.
 
-> Many interesting observations are made which were not
-> previously reported, particularly results #3 and #5 in
-> section 4.1.
+ - Possibly add model suggested by Reviewer 1.
 
-This is just a minor point, but did you actually mean that #2 was surprising, not #3? To summarize the observations:
-
-#2: Features on multiple levels co-adapt in a way that cannot be relearned from scratch.
-#3: Copying layers from a previous solution and fine-tuning them toward the original task does not lead to a performance penalty or gain.
-#5: Transferred features followed by fine-tuning results in networks that generalize better than those trained directly on the target dataset.
-
-We ask because we found #2 and #5 to be the most surprising, and we believe both have not previously been reported. On the other hand, conclusion #3 seemed to be expected, because all layers are optimized for a single task, just starting at a solution previously found using the same data/same task. However, if we've missed something and you think that this is surprising given your intuition or any related work you're familiar with, we'd love to hear why, so we could include a refined description of these observations in the paper.
-
+ - Strengthen statistical conclusions by averaging over more randomly initialized trials (trials currently running).
