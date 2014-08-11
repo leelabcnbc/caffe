@@ -1,0 +1,62 @@
+We would like to thank the reviewers for their encouraging feedback and insightful comments. All reviewers seemed to understand the study and its main results exactly as we interpreted them, so the below comments to reviewers are only minor.
+
+
+
+REVIEWER 1
+
+> On the other side, this paper seems a bit empirical, in
+> the sense that experiments are carried out on some manual 
+> decisions (such as split of source and target tasks).
+
+Admittedly it was our choice to perform separation into natural vs. man-made subsets. However, given the hierarchical class structure of WordNet and ImageNet, these two subsets were the only two large exclusive subsets available. This can be seen in the below list of the top 20 subsets of classes, sorted by number of classes (first column) in each subset:
+
+90 n03122748 - covering
+100 n03094503 - container
+118 n02084071 - dog, domestic dog, Canis familiaris
+123 n01317541 - domestic animal, domesticated animal
+130 n02083346 - canine, canid
+130 n03183080 - device
+158 n02075296 - carnivore
+212 n01886756 - placental, placental mammal, eutherian, eutherian mammal
+218 n01861778 - mammal, mammalian
+337 n01466257 - chordate
+337 n01471682 - vertebrate, craniate
+358 n03575240 - instrumentality, instrumentation
+398 n00015388 - animal, animate being, beast, brute, creature, fauna
+410 n00004258 - living thing, animate thing
+410 n00004475 - organism, being
+522 n00021939 - artifact, artefact
+949 n00003553 - whole, unit
+958 n00002684 - object, physical object
+997 n00001930 - physical entity
+1000 n00001740 - entity
+
+Starting at the largest subset, "1000 n00001740 - entity", and working backward, the first subset containing close to 50% of the classes is "522 n00021939 - artifact, artefact", and the next is "410 n00004475 - organism, being". Fortunately, these two subsets are mutually exclusive, the first being our "man-made" category and the second our "natural" category. Our only real influence was in choosing what to do with the remaining 1000-522-410=68 classes (Are cooked squash natural or man-made?). We looked at example images from each of the 68 classes and placed them into either task A or B, as we thought best. In our code release, we provide a list of the 551 vs 449 classes in each category, and we highlight those 68 category decisions that were made manually.
+
+> It would be good to see a quantitative criterion analyzing
+> the correlation between the two factors raised in the
+> paper and the final performance. Of course, the authors
+> have fairly acknowledged so, and have not overclaimed
+> anything beyond what is presented.
+
+This is an interesting idea, though we're not sure exactly what sort of quantitative criterion would be most helpful. Could you elaborate on what you envision?
+
+We think this suggestion might be to create a model in which we regress a dependent variable, the transfer performance (difference or ratio vs the base case), onto two independent variables, (1) the semantic similarity between task A and task B and (2) the chosen layer for transfer.
+
+In this interpretation we would need to come up with a measure for (1) that does not depend on the transfer performance. For example, one might get a handle on (1) by measuring the number of edges in the WordNet graph one must traverse to get from class A_i to class B_j, and then use the average over all classes in A and B as the distance between task A and task B. This would give some notion of how similar A and B are, and we could then show how transfer is worse for more distance classes.
+
+However, we're not sure this would be a useful model. We would be modeling a handful of points in three dimensions, and actually these are exactly the points already shown in the bottom plot of Figure 3 (along the upper two lines with circles). These points are already plotted along (2) the layer-number axis, and all this new model would add would be a second independent axis, (1) "semantic distance between tasks A and B", which would separate the points along that dimension. Unfortunately, along that new dimension we would have data at *only two* locations, the distance value corresponding to random splits, and the distance value corresponding to the nat/man split.
+
+While we could fit such an ad hoc model with only two points along one dimension, we suspect one would gain no insight from the model beyond what one can already obtain directly from Figure 3. Of course, if we had many more points along this new axis, the model could become interesting, but this would require quite a few more experiments and methods of generating tasks A and B with finely varying semantic separation. Which is to say, this would be a great idea for future work.
+
+
+
+REVIEWER 2
+
+> Many interesting observations are made which were not
+> previously reported, particularly results #3 and #5 in
+> section 4.1.
+
+This is just a minor point, but did you actually mean that #2 was surprising, not #3?
+
+We ask because we found #2 and #5 the most surprising, and we believe both have not previously been reported. On the other hand, conclusion #3 -- that layers copied from a previous solution and fine-tuned toward the original task do not suffer a performance penalty or enjoy a performance gain -- we found not to be surprising. However, if you think that this is surprising, we'd love to hear why. If we have missed any discussion points related to this conclusion, it would be great to include them!
