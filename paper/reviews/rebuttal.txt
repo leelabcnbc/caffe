@@ -25,7 +25,7 @@ Admittedly, it was our choice to perform separation into natural vs. man-made su
 997 n00001930 - physical entity
 1000 n00001740 - entity
 
-Starting at the largest subset "1000 n00001740 - entity" containing all 1000 classes and working backward, the first subset containing approximately 50% of the classes is "522 n00021939 - artifact, artefact", and the next is "410 n00004475 - organism, being". Fortunately for this study, these two subsets are mutually exclusive, the first became our "man-made" category and the second our "natural" category. Our only real influence was in choosing what to do with the remaining 1000-522-410=68 classes (Are cooked squash natural or man-made?). We looked at example images from each of the 68 classes and placed them into either "natural" or "man-made", as we thought best. In our code release, we provide a list of the 551 vs 449 classes in each category, and we highlight those 68 category decisions that were made manually.
+Starting at the largest subset "1000 n00001740 - entity" containing all 1000 classes and working backward, the first subset containing approximately 50% of the classes is "522 n00021939 - artifact, artefact", and the next is "410 n00004475 - organism, being". Fortunately for this study, these two subsets are mutually exclusive; the first became our "man-made" category and the second our "natural" category. Our only real influence was in choosing what to do with the remaining 1000-522-410=68 classes (Are cooked squash natural or man-made?). We looked at example images from each of the 68 classes and placed them into either "natural" or "man-made" as we thought best. In our code release, we provide a list of the 551 vs 449 classes in each category, and we highlight those 68 category decisions that were made manually.
 
 We initially left most of this discussion out of the paper to save space, but thanks to this comment, we realize that in its absence the decisions do seem arbitrary. Thus, we will include this discussion in the final version.
 
@@ -35,9 +35,17 @@ We initially left most of this discussion out of the paper to save space, but th
 > have fairly acknowledged so, and have not overclaimed
 > anything beyond what is presented.
 
-This is an interesting idea, though we're not sure exactly what sort of quantitative criterion would be most helpful. Could you elaborate on what you envision? We would be happy to attempt and include such an analysis once we understand exactly what is being suggested.
+This is an interesting idea, though we're not sure exactly what sort of quantitative criterion would be most helpful. Could you elaborate on what you envision? We have spent some time discussing how best to implement your suggested analysis, but we concluded that we do not yet understand your suggestion enough to implement it precisely. We would be happy to include such an analysis once we understand exactly what is being suggested.
 
 
+
+GENERAL
+
+One additional change we plan to make, provided the reviewers do not object, is to add even more replicates of as many experiments as possible to increase the statistical strength of our results. Trials are ongoing, and we will add as many data points as our available computation allows.
+
+
+
+SUMMARY
 
 To summarize, we plan to make the following changes for a final version of the paper:
 
@@ -45,4 +53,4 @@ To summarize, we plan to make the following changes for a final version of the p
 
  - Possibly add model suggested by Reviewer 1.
 
- - Strengthen statistical conclusions by averaging over more randomly initialized trials (trials currently running).
+ - Strengthen statistical conclusions by averaging over more randomly initialized trials.
