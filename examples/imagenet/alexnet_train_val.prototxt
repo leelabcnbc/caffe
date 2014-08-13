@@ -2,6 +2,8 @@ name: "AlexNet"
 layers {
   name: "data"
   type: DATA
+  top: "data"
+  top: "label"
   data_param {
     source: "ilsvrc12_train_leveldb"
     mean_file: "../../data/ilsvrc12/imagenet_mean.binaryproto"
@@ -9,8 +11,21 @@ layers {
     crop_size: 227
     mirror: true
   }
+  include: { phase: TRAIN }
+}
+layers {
+  name: "data"
+  type: DATA
   top: "data"
   top: "label"
+  data_param {
+    source: "ilsvrc12_val_leveldb"
+    mean_file: "../../data/ilsvrc12/imagenet_mean.binaryproto"
+    batch_size: 50
+    crop_size: 227
+    mirror: false
+  }
+  include: { phase: TEST }
 }
 layers {
   name: "conv1"
@@ -309,8 +324,17 @@ layers {
   top: "fc8"
 }
 layers {
+  name: "accuracy"
+  type: ACCURACY
+  bottom: "fc8"
+  bottom: "label"
+  top: "accuracy"
+  include: { phase: TEST }
+}
+layers {
   name: "loss"
   type: SOFTMAX_LOSS
   bottom: "fc8"
   bottom: "label"
+  top: "loss"
 }
