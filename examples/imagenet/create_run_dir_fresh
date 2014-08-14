@@ -3,6 +3,12 @@
 # Exit on errors
 set -e
 
+if [ "$1" = "" -o "$2" = "" -o "$3" = "" ]; then
+    echo "You must provide three arguments: traindb valdb meanfile, something like this:"
+    echo "   resman `basename $0` imagenet_train_leveldb imagenet_val_leveldb ../../data/ilsvrc12/FETCHED_imagenet_mean.binaryproto"
+    exit 1
+fi
+
 if [ "$GIT_RESULTS_MANAGER_DIR" = "" ]; then
     echo "You must run this from within GitResultsManager, something like this:"
     echo "   resman `basename $0`"
@@ -11,19 +17,13 @@ fi
 
 dir="$GIT_RESULTS_MANAGER_DIR"
 
-if [ "$1" = "" -o "$2" = "" -o "$3" = "" ]; then
-    echo "You must provide three arguments: traindb valdb meanfile, something like this:"
-    echo "   resman `basename $0` imagenet_train_leveldb imagenet_val_leveldb ../../data/ilsvrc12/FETCHED_imagenet_mean.binaryproto"
-    exit 1
-fi
-
 train_leveldb="$1"
 val_leveldb="$2"
 mean="$3"
 
 echo "Directory: $dir"
 
-files="../../build/tools/train_net.bin 0_cpln_data 1_submit_train 2_train_now imagenet_solver.prototxt imagenet_train.prototxt imagenet_val.prototxt"
+files="../../build/tools/caffe.bin 0_cpln_data 1_submit_train 2_train_now imagenet_solver.prototxt imagenet_train_val.prototxt"
 
 echo
 echo "Copying required files:"
@@ -33,13 +33,6 @@ for file in $files; do
 done
 echo -n "  "
 cp -v "$mean" $dir/imagenet_mean.binaryproto
-
-#echo
-#echo "Hardlinking train and val leveldbs:"
-#echo -n "  "
-#ln -sv "`pwd`/$train_leveldb" $dir/imagenet_train_leveldb
-#echo -n "  "
-#ln -sv "`pwd`/$val_leveldb" $dir/imagenet_val_leveldb
 
 echo "Linking train and val leveldbs:"
 echo -n "  "

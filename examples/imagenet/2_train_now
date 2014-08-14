@@ -40,7 +40,7 @@ du -sh imagenet_train_leveldb imagenet_val_leveldb | sed 's/^/    /g'
 echo
 echo "  env:"
 echo
-env | sed 's/^/    /g'
+env | sort | sed 's/^/    /g'
 echo
 
 
@@ -71,25 +71,33 @@ while : ; do
     if [ "$finetune_base_net_file" = "" ]; then
         if [ "$lastfile" = "" ]; then
             echo "Fine-tuning: no. Resuming: no"
+            set -x
+            GLOG_logtostderr=1 time ./caffe.bin train --solver=imagenet_solver.prototxt 2>&1
+            code="$?"
+            set +x
         else
             echo "Fine-tuning: no. Resuming: yes"
+            set -x
+            GLOG_logtostderr=1 time ./caffe.bin train --solver=imagenet_solver.prototxt --snapshot=$lastfile 2>&1
+            code="$?"
+            set +x
         fi
-        # same command for both because lastfile could be blank
-        GLOG_logtostderr=1 time ./train_net.bin imagenet_solver.prototxt $lastfile 2>&1
-        code="$?"
     else
         if [ "$lastfile" = "" ]; then
             echo "Fine-tuning: yes. Resuming: no"
-            GLOG_logtostderr=1 time ./finetune_net.bin imagenet_solver.prototxt $finetune_base_net_file 2>&1
+            set -x
+            GLOG_logtostderr=1 time ./caffe.bin train --solver=imagenet_solver.prototxt --weights=caffe_imagenet_train_iter_0 2>&1
             code="$?"
+            set +x
         else
             echo "Fine-tuning: yes. Resuming: yes"
-            # In this case we don't use ./finetune_net.bin or the
-            # finetune_base_net_file, because we're resuming a
-            # previous fine-tune run, so we just need the
-            # *.solverstate file
-            GLOG_logtostderr=1 time ./train_net.bin imagenet_solver.prototxt $lastfile 2>&1
+            # In this case we use --snapshot instead of --weights
+            # because we're resuming a previous fine-tune run, so we
+            # just need the *.solverstate file
+            set -x
+            GLOG_logtostderr=1 time ./caffe.bin train --solver=imagenet_solver.prototxt --snapshot=$lastfile 2>&1
             code="$?"
+            set +x
         fi
     fi
 
