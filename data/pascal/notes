@@ -1,0 +1,25 @@
+[2014-08-01  9:08:20 pm] 
+Making dataset
+
+Smooth downsampling for images:
+
+jyosinsk@mmmlog3 [~/s/caffe/data/pascal/VOCdevkit/VOC2012/JPEGImages] $ find * | time parallel convert -resize 256x256\! {} ../256_JPEGImages/{}
+
+Aliased downsampling for pixel labels:
+
+jyosinsk@mmmlog3 [~/s/caffe/data/pascal/VOCdevkit/VOC2012/SegmentationObject] $ find * | parallel -j 8 --bar convert -sample 256x256\! {} ../256_SegmentationObject/{}
+100% 2913:0=0s 2011_003271.png
+
+jyosinsk@mmmlog3 [~/s/caffe/data/pascal/VOCdevkit/VOC2012/SegmentationClass] $ find * | parallel -j 8 --bar convert -sample 256x256\! {} ../256_SegmentationClass/{}
+100% 2913:0=0s 2011_003271.png
+
+
+
+
+
+
+
+
+
+
+
