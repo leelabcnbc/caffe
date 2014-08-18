@@ -8,28 +8,23 @@ caffe_root = '../'
 sys.path.insert(0, caffe_root + 'python')
 import caffe
 
+from get_net import net
 
 
-net = None
-imagenet_mean = load(caffe_root + 'python/caffe/imagenet/ilsvrc_2012_mean.npy')
 
-def get_net():
-    global net
-    if net is None:
-        net = caffe.Classifier(caffe_root + 'jason/imagenet_deploy.prototxt',
-                               #caffe_root + 'jason/140311_234854_afadfd3_priv_netbase/caffe_imagenet_train_iter_450000',
-                               caffe_root + 'jason/caffe_reference_imagenet_model',
-        )
-        net.set_phase_test()
-        net.set_mode_gpu()
-        # input preprocessing: 'data' is the name of the input blob == net.inputs[0]
-        net.set_mean('data', load(caffe_root + 'python/caffe/imagenet/ilsvrc_2012_mean.npy'))  # ImageNet mean
-        #net.set_raw_scale('data', scale)  # the reference model operates on images in [0,255] range instead of [0,1]
-        net.set_channel_swap('data', (2,1,0))  # the reference model has channels in BGR order instead of RGB
-    return net
+def safe_predict(net, image):
+    im_255 = array(image, 'float32', copy=True)
+    im_255 -= im_255.min()
+    im_255 *= (255.0 / (im_255.max() + 1e-6))
+    #print 'im_25 min', im_255.min(), 'max', im_255.max()
+    #min_val = image.min()
+    #max_val = image.max()
+    #if min_val < 0 or min_val > 1 or max_val < 0 or max_val > 1:
+    #    print 'WARNING: safe_predict expected image in [0,1] but got range [%g,%g]' % (min_val, max_val)
+    return net.predict([im_255], oversample=False)
 
 
-    
+
 def get_labels():
     # load labels
     imagenet_labels_filename = caffe_root + 'data/ilsvrc12/synset_words.txt'
@@ -78,7 +73,7 @@ def show_net(net, layers=False):
 
 
 def cam_loop():
-    net = get_net()
+    #net = get_net()
     labels = get_labels()
     cv2.namedWindow('preview')
     cap = cv2.VideoCapture(0)
@@ -97,29 +92,28 @@ def cam_loop():
             #cv2.resize(frame[:,280:(280+720),:], 0, im_small)
             im_small = cv2.resize(frame[:,280:(280+720),:], small_shape[:2])
             cv2.imshow('preview', im_small)
-            net.predict([im_small], oversample=False)
+            safe_predict(net, im_small)
+            print
             clf()
             plot_probs(net, labels)
             draw()
-            print frame.mean()
+            #print frame.mean()
         rval, frame = cap.read()
-
+        
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
 
 
 def classit():
-    net = get_net()
+    #net = get_net()
     labels = get_labels()
 
     #filename = caffe_root + 'examples/images/cat.jpg'
     filename = '/Users/jason/Desktop/flower.png'
     img = caffe.io.load_image(filename)
     print 'min', img.min(), 'max', img.max()
-    #scores = net.predict([0.00001*img], oversample=False)
-    #scores = net.predict([imagenet_mean.transpose((1,2,0))], oversample=False)
-    scores = net.predict([imagenet_mean.transpose((1,2,0))[15:15+227,15:15+227]], oversample=False)
+    scores = safe_predict(net, img)
 
     show_net(net)
     clf()
