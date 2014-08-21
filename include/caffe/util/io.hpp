@@ -74,12 +74,17 @@ inline bool ReadImageToDatum(const string& filename, const int label,
 template <typename Dtype>
 void hdf5_load_nd_dataset_helper(
   hid_t file_id, const char* dataset_name_, int min_dim, int max_dim,
-  Blob<Dtype>* blob);
+  Blob<Dtype>* blob, unsigned n_start, unsigned n_max);
 
 template <typename Dtype>
 void hdf5_load_nd_dataset(
   hid_t file_id, const char* dataset_name_, int min_dim, int max_dim,
   Blob<Dtype>* blob);
+
+template <typename Dtype>
+void hdf5_load_nd_dataset(
+  hid_t file_id, const char* dataset_name_, int min_dim, int max_dim,
+  Blob<Dtype>* blob, unsigned index_start, unsigned n_max);
 
 template <typename Dtype>
 void hdf5_save_nd_dataset(

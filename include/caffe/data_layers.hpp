@@ -57,6 +57,9 @@ class DataLayer : public Layer<Dtype>, public InternalThread {
   // The thread's function
   virtual void InternalThreadEntry();
 
+  // HDF5-specific methods
+  virtual void LoadNextHdfBatch();
+
   shared_ptr<Caffe::RNG> prefetch_rng_;
 
   // LEVELDB
@@ -68,9 +71,19 @@ class DataLayer : public Layer<Dtype>, public InternalThread {
   MDB_txn* mdb_txn_;
   MDB_cursor* mdb_cursor_;
   MDB_val mdb_key_, mdb_value_;
+  // HDF5
+  std::vector<std::string> hdf_filenames_;
+  unsigned int hdf_num_files_;
+  unsigned int hdf_current_file_;
+  unsigned int hdf_current_row_;
+  Blob<Dtype> buffer_data_;  // For partial reads and reads of uncropped images
+  Blob<Dtype> buffer_label_; // For partial reads
+  
+  // NEW General
+  int label_channels_;
 
   int datum_channels_;
-  int datum_height_;
+  int datum_height_;  // pre-crop height and width
   int datum_width_;
   int datum_size_;
   Blob<Dtype> prefetch_data_;

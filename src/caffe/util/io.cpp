@@ -12,6 +12,7 @@
 #include <fstream>  // NOLINT(readability/streams)
 #include <string>
 #include <vector>
+#include <stdint.h>
 
 #include "caffe/common.hpp"
 #include "caffe/proto/caffe.pb.h"
@@ -108,11 +109,12 @@ bool ReadImageToDatum(const string& filename, const int label,
   return true;
 }
 
-// Verifies format of data stored in HDF5 file and reshapes blob accordingly.
-template <typename Dtype>
-void hdf5_load_nd_dataset_helper(
-    hid_t file_id, const char* dataset_name_, int min_dim, int max_dim,
-    Blob<Dtype>* blob) {
+
+
+
+
+////////////////////////////////////
+std::vector<hsize_t> hdf5_load_nd_dataset_helper_0(hid_t file_id, const char* dataset_name_, int min_dim, int max_dim, H5T_class_t expected_class, unsigned index_start, unsigned n_max, unsigned & index_max) {
   // Verify that the number of dimensions is in the accepted range.
   herr_t status;
   int ndims;
@@ -120,39 +122,148 @@ void hdf5_load_nd_dataset_helper(
   CHECK_GE(status, 0) << "Failed to get dataset ndims for " << dataset_name_;
   CHECK_GE(ndims, min_dim);
   CHECK_LE(ndims, max_dim);
+  CHECK_LE(max_dim, 4) << "Blobs only support up to 4 dims";
+  CHECK_GE(index_start, 0);
+  CHECK_GE(n_max, 0);
 
   // Verify that the data format is what we expect: float or double.
-  std::vector<hsize_t> dims(ndims);
+  std::vector<hsize_t> data_dims(ndims);
   H5T_class_t class_;
   status = H5LTget_dataset_info(
-      file_id, dataset_name_, dims.data(), &class_, NULL);
+    file_id, dataset_name_, data_dims.data(), &class_, NULL);
   CHECK_GE(status, 0) << "Failed to get dataset info for " << dataset_name_;
-  CHECK_EQ(class_, H5T_FLOAT) << "Expected float or double data";
+  CHECK_LT(index_start, data_dims[0]) << "Cannot start at index " << index_start << " when num examples is " << data_dims[0];
+  CHECK_EQ(class_, expected_class) << "Expected data of class " << expected_class << " but got class " << class_;
 
-  blob->Reshape(
-    dims[0],
-    (dims.size() > 1) ? dims[1] : 1,
-    (dims.size() > 2) ? dims[2] : 1,
-    (dims.size() > 3) ? dims[3] : 1);
+  std::vector<hsize_t> out_dims(data_dims);
+  if (n_max == 0) {
+    // We'll read from index_start until the end of the dataset
+    out_dims[0] = data_dims[0] - index_start;
+    index_max = data_dims[0];
+  } else {
+    // We'll read from index_start until either the end or n_max
+    index_max = (data_dims[0] < index_start + n_max) ? data_dims[0] : index_start + n_max;
+    out_dims[0] = index_max - index_start;
+  }
+
+  return out_dims;
 }
 
+
+template <typename Dtype>
+void hdf5_load_nd_dataset_helper_1(Dtype* buffer, hid_t file_id, const char* dataset_name_, std::vector<hsize_t> out_dims, H5T_class_t expected_class, hid_t data_type, unsigned index_start, unsigned index_max) {
+  hid_t dataset = H5Dopen(file_id, dataset_name_, H5P_DEFAULT);
+  hid_t dataspace = H5Dget_space(dataset);
+  
+  int ndims = out_dims.size();
+  hsize_t* offset = new hsize_t[ndims]; /* hyperslab offset in the file */
+  hsize_t* count = new hsize_t[ndims];    /* size of the hyperslab in the file */
+  offset[0] = index_start;  // slice block of the appropriate size from dim 0
+  count[0] = index_max - index_start;
+  for (int d = 1; d < ndims; d++) {
+    // return the complete block of data along all dimensions except maybe 0
+    offset[d] = 0;
+    count[d] = out_dims[d];
+  }
+  // Select the hyperslab to be read
+  herr_t status = H5Sselect_hyperslab(dataspace, H5S_SELECT_SET, offset, NULL, count, NULL);
+  delete[] offset;
+  delete[] count;
+  CHECK_GE(status, 0) << "Failed to select hyperslab for dataset " << dataset_name_;
+
+  // Read the data   (INT SPECIFIC)
+  status = H5Dread(dataset, data_type, H5S_ALL, dataspace,
+                          H5P_DEFAULT, buffer);
+  //status = H5LTread_dataset(
+  //  file_id, dataset_name_, H5T_NATIVE_UCHAR, blob->mutable_cpu_data());
+  H5Dclose(dataset);
+  H5Sclose(dataspace);
+  CHECK_GE(status, 0) << "Failed to read dataset " << dataset_name_;
+}
+////////////////////////////////////
+
+
+
+// Verifies format of data stored in HDF5 file and reshapes blob accordingly.
+template <typename Dtype>
+void hdf5_load_nd_dataset_helper(
+    hid_t file_id, const char* dataset_name_, int min_dim, int max_dim,
+    Blob<Dtype>* blob, H5T_class_t expected_class, hid_t data_type, unsigned index_start, unsigned n_max) {
+  unsigned index_max;
+  std::vector<hsize_t> out_dims = hdf5_load_nd_dataset_helper_0(file_id, dataset_name_, min_dim, max_dim, expected_class, index_start, n_max, index_max);
+
+  blob->Reshape(
+    out_dims[0],
+    (out_dims.size() > 1) ? out_dims[1] : 1,
+    (out_dims.size() > 2) ? out_dims[2] : 1,
+    (out_dims.size() > 3) ? out_dims[3] : 1);
+
+  hdf5_load_nd_dataset_helper_1(blob->mutable_cpu_data(), file_id, dataset_name_, out_dims, expected_class, data_type, index_start, index_max);
+}
+
+
+// TODO: Move to hpp file.
+// hdf5_load_nd_dataset allows you to specify index_start for which
+// row to start on and n_max for how many to read at most. 0 to start
+// at beginning, 0 to read all rows.
+template <>
+void hdf5_load_nd_dataset<float>(hid_t file_id, const char* dataset_name_,
+        int min_dim, int max_dim, Blob<float>* blob, unsigned index_start, unsigned n_max) {
+  hdf5_load_nd_dataset_helper(file_id, dataset_name_, min_dim, max_dim,
+                              blob, H5T_FLOAT, H5T_NATIVE_FLOAT, index_start, n_max);
+}
 template <>
 void hdf5_load_nd_dataset<float>(hid_t file_id, const char* dataset_name_,
         int min_dim, int max_dim, Blob<float>* blob) {
-  hdf5_load_nd_dataset_helper(file_id, dataset_name_, min_dim, max_dim, blob);
-  herr_t status = H5LTread_dataset_float(
-    file_id, dataset_name_, blob->mutable_cpu_data());
-  CHECK_GE(status, 0) << "Failed to read float dataset " << dataset_name_;
+  hdf5_load_nd_dataset(file_id, dataset_name_, min_dim, max_dim, blob, 0, 0);
 }
 
 template <>
 void hdf5_load_nd_dataset<double>(hid_t file_id, const char* dataset_name_,
-        int min_dim, int max_dim, Blob<double>* blob) {
-  hdf5_load_nd_dataset_helper(file_id, dataset_name_, min_dim, max_dim, blob);
-  herr_t status = H5LTread_dataset_double(
-    file_id, dataset_name_, blob->mutable_cpu_data());
-  CHECK_GE(status, 0) << "Failed to read double dataset " << dataset_name_;
+        int min_dim, int max_dim, Blob<double>* blob, unsigned index_start, unsigned n_max) {
+  // Specify index_start for which row to start on and n_max for how many to read at most. 0 to start at beginning, 0 to read all rows.
+  hdf5_load_nd_dataset_helper(file_id, dataset_name_, min_dim, max_dim,
+                              blob, H5T_FLOAT, H5T_NATIVE_DOUBLE, index_start, n_max);
 }
+template <>
+void hdf5_load_nd_dataset<double>(hid_t file_id, const char* dataset_name_,
+        int min_dim, int max_dim, Blob<double>* blob) {
+  hdf5_load_nd_dataset(file_id, dataset_name_, min_dim, max_dim, blob, 0, 0);
+}
+
+// template <>
+// void hdf5_load_nd_dataset<uint8_t>(hid_t file_id, const char* dataset_name_,
+//         int min_dim, int max_dim, Blob<uint8_t>* blob, unsigned index_start, unsigned n_max) {
+//   // Specify index_start for which row to start on and n_max for how many to read at most. 0 to start at beginning, 0 to read all rows.
+//   hdf5_load_nd_dataset_helper(file_id, dataset_name_, min_dim, max_dim,
+//                               blob, H5T_INTEGER, H5T_NATIVE_UCHAR, index_start, n_max);
+// }
+// template <>
+// void hdf5_load_nd_dataset<uint8_t>(hid_t file_id, const char* dataset_name_,
+//         int min_dim, int max_dim, Blob<uint8_t>* blob) {
+//   hdf5_load_nd_dataset(file_id, dataset_name_, min_dim, max_dim, blob, 0, 0);
+// }
+
+// OLD
+// template <>
+// void hdf5_load_nd_dataset<float>(hid_t file_id, const char* dataset_name_,
+//         int min_dim, int max_dim, Blob<float>* blob) {
+//   H5T_class_t class_ = hdf5_load_nd_dataset_helper(file_id, dataset_name_, min_dim, max_dim, blob);
+//   CHECK_EQ(class_, H5T_FLOAT) << "Expected float or double data";
+//   herr_t status = H5LTread_dataset_float(
+//     file_id, dataset_name_, blob->mutable_cpu_data());
+//   CHECK_GE(status, 0) << "Failed to read float dataset " << dataset_name_;
+// }
+
+// template <>
+// void hdf5_load_nd_dataset<double>(hid_t file_id, const char* dataset_name_,
+//         int min_dim, int max_dim, Blob<double>* blob) {
+//   H5T_class_t class_ = hdf5_load_nd_dataset_helper(file_id, dataset_name_, min_dim, max_dim, blob);
+//   CHECK_EQ(class_, H5T_FLOAT) << "Expected float or double data";
+//   herr_t status = H5LTread_dataset_double(
+//     file_id, dataset_name_, blob->mutable_cpu_data());
+//   CHECK_GE(status, 0) << "Failed to read double dataset " << dataset_name_;
+//}
 
 template <>
 void hdf5_save_nd_dataset<float>(

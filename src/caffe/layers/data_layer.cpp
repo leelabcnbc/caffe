@@ -1,6 +1,7 @@
 #include <leveldb/db.h>
 #include <stdint.h>
 
+#include <fstream>  // NOLINT(readability/streams)
 #include <string>
 #include <vector>
 
@@ -165,13 +166,22 @@ void DataLayer<Dtype>::SetUp(const vector<Blob<Dtype>*>& bottom,
   Layer<Dtype>::SetUp(bottom, top);
   if (top->size() == 1) {
     output_labels_ = false;
+    CHECK_EQ(this->layer_param_.data_param().label_dim(), 1) << "label_dim > 1 specified but labels are not even used";
   } else {
     output_labels_ = true;
+    CHECK_GE(this->layer_param_.data_param().label_dim(), 1) << "label_dim should be 1 or greater";
   }
+  
+  // Init to suppress warnings about uninitialized variables
+  //hdf_num_files_ = -1;
+  //hdf_current_file_ = -1;
+  //hdf_current_row_ = -1;
+
   // Initialize DB
   switch (this->layer_param_.data_param().backend()) {
   case DataParameter_DB_LEVELDB:
     {
+    CHECK_EQ(this->layer_param_.data_param().label_dim(), 1) << "label_dim != 1 only supported for HDF5 for now";
     leveldb::DB* db_temp;
     leveldb::Options options;
     options.create_if_missing = false;
@@ -188,6 +198,7 @@ void DataLayer<Dtype>::SetUp(const vector<Blob<Dtype>*>& bottom,
     }
     break;
   case DataParameter_DB_LMDB:
+    CHECK_EQ(this->layer_param_.data_param().label_dim(), 1) << "label_dim != 1 only supported for HDF5 for now";
     CHECK_EQ(mdb_env_create(&mdb_env_), MDB_SUCCESS) << "mdb_env_create failed";
     CHECK_EQ(mdb_env_set_mapsize(mdb_env_, 1099511627776), MDB_SUCCESS);  // 1TB
     CHECK_EQ(mdb_env_open(mdb_env_,
@@ -202,6 +213,35 @@ void DataLayer<Dtype>::SetUp(const vector<Blob<Dtype>*>& bottom,
     LOG(INFO) << "Opening lmdb " << this->layer_param_.data_param().source();
     CHECK_EQ(mdb_cursor_get(mdb_cursor_, &mdb_key_, &mdb_value_, MDB_FIRST),
         MDB_SUCCESS) << "mdb_cursor_get failed";
+    break;
+  case DataParameter_DB_HDF5:
+    {
+    // Read the source to parse the filenames.
+    const string& source = this->layer_param_.data_param().source();
+    LOG(INFO) << "Loading HDF5 filenames from " << source;
+    hdf_filenames_.clear();
+    std::ifstream source_file(source.c_str());
+    if (source_file.is_open()) {
+      std::string line;
+      while (source_file >> line) {
+        hdf_filenames_.push_back(line);
+      }
+    }
+    source_file.close();
+    hdf_num_files_ = hdf_filenames_.size();
+    hdf_current_file_ = 0;
+    hdf_current_row_ = 0;
+    LOG(INFO) << "Number of files: " << hdf_num_files_;
+
+    // Load the first HDF5 file and initialize the line counter.
+    // Before: 
+    LoadNextHdfBatch();
+    // After: these are updated and filled with data
+    //   unsigned int hdf_current_file_;
+    //   hsize_t hdf_current_row_;
+    //   Blob<Dtype> buffer_data_;  // For partial reads and reads of uncropped images
+    //   Blob<Dtype> buffer_label_; // For partial reads
+    }
     break;
   default:
     LOG(FATAL) << "Unknown database backend";
@@ -227,54 +267,69 @@ void DataLayer<Dtype>::SetUp(const vector<Blob<Dtype>*>& bottom,
                    MDB_FIRST), MDB_SUCCESS);
         }
         break;
+      case DataParameter_DB_HDF5:
+        LOG(FATAL) << "rand_skip parameter not yet supported for HDF5 backend";
+        break;
       default:
         LOG(FATAL) << "Unknown database backend";
       }
     }
   }
-  // Read a data point, and use it to initialize the top blob.
-  Datum datum;
-  switch (this->layer_param_.data_param().backend()) {
-  case DataParameter_DB_LEVELDB:
-    datum.ParseFromString(iter_->value().ToString());
-    break;
-  case DataParameter_DB_LMDB:
-    datum.ParseFromArray(mdb_value_.mv_data, mdb_value_.mv_size);
-    break;
-  default:
-    LOG(FATAL) << "Unknown database backend";
+
+  // Figure out the shape of each data point
+  if (this->layer_param_.data_param().backend() == DataParameter_DB_HDF5) {
+    datum_channels_ = buffer_data_.channels();
+    datum_height_ = buffer_data_.height();
+    datum_width_ = buffer_data_.width();
+  } else {
+    // Read a data point, and use it to initialize the top blob.
+    Datum datum;
+    switch (this->layer_param_.data_param().backend()) {
+    case DataParameter_DB_LEVELDB:
+      datum.ParseFromString(iter_->value().ToString());
+      break;
+    case DataParameter_DB_LMDB:
+      datum.ParseFromArray(mdb_value_.mv_data, mdb_value_.mv_size);
+      break;
+    case DataParameter_DB_HDF5:
+      // TODO: read first point into datum, somehow??
+      break;
+    default:
+      LOG(FATAL) << "Unknown database backend";
+    }
+    datum_channels_ = datum.channels();
+    datum_height_ = datum.height();
+    datum_width_ = datum.width();
   }
+  // datum size
+  datum_size_ = datum_channels_ * datum_height_ * datum_width_;
 
   // image
   int crop_size = this->layer_param_.data_param().crop_size();
+  CHECK_GT(datum_height_, crop_size);
+  CHECK_GT(datum_width_, crop_size);
   if (crop_size > 0) {
     (*top)[0]->Reshape(this->layer_param_.data_param().batch_size(),
-                       datum.channels(), crop_size, crop_size);
+                       datum_channels_, crop_size, crop_size);
     prefetch_data_.Reshape(this->layer_param_.data_param().batch_size(),
-        datum.channels(), crop_size, crop_size);
+        datum_channels_, crop_size, crop_size);
   } else {
     (*top)[0]->Reshape(
-        this->layer_param_.data_param().batch_size(), datum.channels(),
-        datum.height(), datum.width());
+        this->layer_param_.data_param().batch_size(), datum_channels_,
+        datum_height_, datum_width_);
     prefetch_data_.Reshape(this->layer_param_.data_param().batch_size(),
-        datum.channels(), datum.height(), datum.width());
+        datum_channels_, datum_height_, datum_width_);
   }
   LOG(INFO) << "output data size: " << (*top)[0]->num() << ","
       << (*top)[0]->channels() << "," << (*top)[0]->height() << ","
       << (*top)[0]->width();
+
   // label
   if (output_labels_) {
-    (*top)[1]->Reshape(this->layer_param_.data_param().batch_size(), 1, 1, 1);
+    (*top)[1]->Reshape(this->layer_param_.data_param().batch_size(), label_channels_, 1, 1);
     prefetch_label_.Reshape(this->layer_param_.data_param().batch_size(),
-        1, 1, 1);
+        label_channels_, 1, 1);
   }
-  // datum size
-  datum_channels_ = datum.channels();
-  datum_height_ = datum.height();
-  datum_width_ = datum.width();
-  datum_size_ = datum.channels() * datum.height() * datum.width();
-  CHECK_GT(datum_height_, crop_size);
-  CHECK_GT(datum_width_, crop_size);
   // check if we want to have mean
   if (this->layer_param_.data_param().has_mean_file()) {
     const string& mean_file = this->layer_param_.data_param().mean_file();
@@ -303,6 +358,89 @@ void DataLayer<Dtype>::SetUp(const vector<Blob<Dtype>*>& bottom,
   CreatePrefetchThread();
   DLOG(INFO) << "Prefetch initialized.";
 }
+
+
+template <typename Dtype>
+void DataLayer<Dtype>::LoadNextHdfBatch() {
+  // not sure if all are needed...
+  const unsigned batch_size = this->layer_param_.hdf5_data_param().batch_size();
+  //const int data_count = (*top)[0]->count() / (*top)[0]->num();              // JBY: size of one data point = 3*256*256 = 196608
+  //const int label_data_count = (*top)[1]->count() / (*top)[1]->num();        // JBY: size of one label = 1
+  
+  // Load the first HDF5 file and initialize the line counter.
+  // Before: 
+  // Inside -----> LoadNextHdfBatch();
+  // After: these are updated and filled with data
+  //   unsigned int hdf_current_file_;
+  //   hsize_t hdf_current_row_;
+  //   Blob<Dtype> buffer_data_;  // For partial reads and reads of uncropped images
+  //   Blob<Dtype> buffer_label_; // For partial reads
+
+  unsigned loaded_so_far = 0; // How much of buffer_data_ and buffer_label_ have been filled
+
+  while (loaded_so_far < batch_size) {
+    // Load next blob
+    // Open next file
+    
+    // at start of loop:
+    //  - hdf_current_file_ is valid
+    //  - hdf_current_row_ is valid
+
+    string& filename = hdf_filenames_[hdf_current_file_];
+    LOG(INFO) << "Loading HDF5 file: " << filename;
+    hid_t file_id = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+    CHECK_GE(file_id, 0) << "Failed opening HDF5 file " << filename;
+    
+    const int MIN_DATA_DIM = 2;
+    const int MAX_DATA_DIM = 4;
+    const int MIN_LABEL_DIM = 1;
+    const int MAX_LABEL_DIM = 2;
+
+    float foo = 5.0;
+    hdf5_load_nd_dataset(file_id, "data", MIN_DATA_DIM, foo,
+                         &buffer_data_);
+    hdf5_load_nd_dataset(file_id, "data", MIN_DATA_DIM, MAX_DATA_DIM,
+                         &buffer_data_, 0, 0);
+    hdf5_load_nd_dataset(file_id, "data", MIN_DATA_DIM, MAX_DATA_DIM,
+                         &buffer_data_, hdf_current_row_, batch_size - loaded_so_far);
+    hdf5_load_nd_dataset(file_id, "label", MIN_LABEL_DIM, MAX_LABEL_DIM,
+                         &buffer_label_, hdf_current_row_, batch_size - loaded_so_far);
+
+    herr_t status = H5Fclose(file_id);
+    CHECK_GE(status, 0) << "Failed to close HDF5 file " << filename;
+    CHECK_EQ(buffer_data_.num(), buffer_label_.num()) << "read a different number of data points vs. labels";
+
+    int loaded_here = buffer_data_.num();
+    LOG(INFO) << "Loaded " << loaded_here << " examples from " << filename;
+    if (loaded_here == batch_size) {
+      // We loaded everything we need, and there may well be more in the file
+      hdf_current_row_ += loaded_here;
+    } else {
+      // We couldn't load enough, so the file must be exhausted. Go to next file.
+      hdf_current_file_ += 1;
+      if (hdf_current_file_ == hdf_num_files_) {
+        hdf_current_file_ = 0;
+        LOG(INFO) << "looping around to first HDF5 file";
+      }
+      hdf_current_row_ = 0;
+    }
+
+    // Copy the (possibly small) buffer to the (possibly larger) prefetch blob
+    if (loaded_here > 0) {
+      caffe_copy(buffer_data_.count(),
+                 buffer_data_.cpu_data(),
+                 prefetch_data_.mutable_cpu_data() + prefetch_data_.offset(loaded_so_far, 0, 0, 0));
+      if (output_labels_) {
+        caffe_copy(buffer_label_.count(),
+                   buffer_label_.cpu_data(),
+                   prefetch_label_.mutable_cpu_data() + prefetch_label_.offset(loaded_so_far, 0, 0, 0));
+      }
+      // Then at end:
+      loaded_so_far += loaded_here;
+    }
+  }
+}
+
 
 template <typename Dtype>
 void DataLayer<Dtype>::CreatePrefetchThread() {

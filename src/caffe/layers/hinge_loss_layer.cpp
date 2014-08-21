@@ -13,6 +13,7 @@ namespace caffe {
 template <typename Dtype>
 Dtype HingeLossLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
     vector<Blob<Dtype>*>* top) {
+  LOG(INFO) << "HingeLossLayer::Forward_cpu begin";
   const Dtype* bottom_data = bottom[0]->cpu_data();
   Dtype* bottom_diff = bottom[0]->mutable_cpu_diff();
   const Dtype* label = bottom[1]->cpu_data();
@@ -32,8 +33,10 @@ Dtype HingeLossLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
   }
   switch (this->layer_param_.hinge_loss_param().norm()) {
   case HingeLossParameter_Norm_L1:
+    LOG(INFO) << "HingeLossLayer::Forward_cpu end";
     return caffe_cpu_asum(count, bottom_diff) / num;
   case HingeLossParameter_Norm_L2:
+    LOG(INFO) << "HingeLossLayer::Forward_cpu end";
     return caffe_cpu_dot(count, bottom_diff, bottom_diff) / num;
   default:
     LOG(FATAL) << "Unknown Norm";
@@ -43,6 +46,7 @@ Dtype HingeLossLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
 template <typename Dtype>
 void HingeLossLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
     const vector<bool>& propagate_down, vector<Blob<Dtype>*>* bottom) {
+  LOG(INFO) << "HingeLossLayer::Backward_cpu begin";
   if (propagate_down[1]) {
     LOG(FATAL) << this->type_name()
                << " Layer cannot backpropagate to label inputs.";
@@ -70,6 +74,7 @@ void HingeLossLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
       LOG(FATAL) << "Unknown Norm";
     }
   }
+  LOG(INFO) << "HingeLossLayer::Backward_cpu end";
 }
 
 INSTANTIATE_CLASS(HingeLossLayer);
