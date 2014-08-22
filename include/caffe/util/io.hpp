@@ -90,6 +90,9 @@ template <typename Dtype>
 void hdf5_save_nd_dataset(
   const hid_t file_id, const string dataset_name, const Blob<Dtype>& blob);
 
+template <typename Dtype>
+hid_t get_hdf5_type();
+
 }  // namespace caffe
 
 #endif   // CAFFE_UTIL_IO_H_

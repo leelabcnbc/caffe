@@ -342,6 +342,11 @@ message DataParameter {
     LMDB = 1;
     HDF5 = 2;
   }
+  //enum DataType {
+  //  UINT8 = 0;
+  //  FLOAT32 = 1;
+  //  DOUBLE = 2;
+  //}
   // Specify the data source.
   optional string source = 1;
   // For data pre-processing, we can do simple scaling and subtracting the
@@ -363,6 +368,8 @@ message DataParameter {
   optional DB backend = 8 [default = LEVELDB];
   // Allow labels of higher dimension than 1
   optional uint32 label_dim = 9 [default = 1];
+  // Specify the type of data loaded by the 
+  // optional DataType hdf5_data_type = 10 [default = FLOAT32];
 }
 
 // Message that stores parameters used by DropoutLayer

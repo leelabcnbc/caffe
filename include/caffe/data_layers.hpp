@@ -76,9 +76,21 @@ class DataLayer : public Layer<Dtype>, public InternalThread {
   unsigned int hdf_num_files_;
   unsigned int hdf_current_file_;
   unsigned int hdf_current_row_;
-  Blob<Dtype> buffer_data_;  // For partial reads and reads of uncropped images
-  Blob<Dtype> buffer_label_; // For partial reads
-  
+  //Blob<Dtype> buffer_data_;  // For partial reads and reads of uncropped images
+  //Blob<Dtype> buffer_label_; // For partial reads
+  // unsigned char* hdf_buffer_data_uint8_;
+  // float* hdf_buffer_data_float_;
+  // double* hdf_buffer_data_double_;
+  // unsigned char* hdf_buffer_label_uint8_;
+  // float* hdf_buffer_label_float_;
+  //double* hdf_buffer_label_double_;
+  std::vector<hsize_t> hdf_data_datumdims_;  // does not include batch size
+  std::vector<hsize_t> hdf_label_datumdims_;  // does not include batch size
+  bool hdf_datumdims_init_;
+  Dtype* hdf_buffer_data_; // For partial reads and reads of uncropped images
+  Dtype* hdf_buffer_label_; // For partial reads
+  unsigned hdf_buffer_loaded_; // How many data points have been loaded to buffer, // How much of buffer_data_ and buffer_label_ have been filled
+
   // NEW General
   int label_channels_;
 
