@@ -106,18 +106,26 @@ void hdf5_load_nd_dataset(
   Blob<Dtype>* blob, unsigned index_start, unsigned n_max);
 
 template <typename Dtype>
-unsigned hdf5__jason_load(hid_t file_id, const char* dataset_name_, int min_dim, int max_dim,
-                          Dtype* & buffer, unsigned buffer_examples_offset,
-                          unsigned batch_size,
-                          unsigned index_start, unsigned n_max) {
+unsigned hdf5_load_variable_slice(
+  hid_t file_id, const char* dataset_name_, int min_dim, int max_dim,
+  Dtype* & buffer, unsigned buffer_examples_offset,
+  unsigned batch_size, unsigned index_start, unsigned n_max) {
+  // Loads from 0 to n_max examples from the given file and dataset,
+  // starting at index_start and going either until n_max are read or
+  // the end of the file is reached.
+  //
+  // Returns: number of examples read
+
   unsigned index_max;
+
   std::vector<hsize_t> out_dims = hdf5_load_nd_dataset_helper_0(
     file_id, dataset_name_, min_dim, max_dim, (H5T_class_t) NULL,
     index_start, n_max, index_max);
 
   std::vector<hsize_t> datum_dims = hdf5_get_dataset_datumdims(file_id, dataset_name_);
 
-  CHECK_LE(buffer_examples_offset, batch_size) << "offset into buffer should be less than total batch size";
+  CHECK_LE(buffer_examples_offset, batch_size)
+    << "offset into buffer should be less than total batch size";
   CHECK_GE(batch_size - buffer_examples_offset, index_max - index_start)
     << "Remaining space in buffer is smaller than batch about to be read";
 
@@ -126,25 +134,25 @@ unsigned hdf5__jason_load(hid_t file_id, const char* dataset_name_, int min_dim,
     datum_count *= datum_dims[i];
 
   // Allocate buffer for whole batch_size if it is not already allocated
-  LOG(INFO) << "Note: this is data layer for file_id " << file_id;
-  LOG(INFO) << "Before check, buffer address is: " << buffer;
+  //LOG(INFO) << "Note: this is data layer for file_id " << file_id;
+  //LOG(INFO) << "Before check, buffer address is: " << buffer;
   if (!buffer) {
-    LOG(INFO) << "Allocing more memory, number of elems: " << batch_size * datum_count
+    LOG(INFO) << "Allocatinging memory for HDF5 read buffer, number of elems: " << batch_size * datum_count
               << " size of Dtype " << sizeof(Dtype)
               << " = total bytes " << batch_size * datum_count * sizeof(Dtype);
     buffer = new Dtype[batch_size * datum_count];
   } else {
-    LOG(INFO) << "Not allocing more memory, number of elems should be: " << batch_size * datum_count;
+    // LOG(INFO) << "Not allocing more memory, number of elems should be: " << batch_size * datum_count;
   }
-  LOG(INFO) << "After check, buffer address is: " << buffer;
+  //  LOG(INFO) << "After check, buffer address is: " << buffer;
 
   Dtype* buffer_partition_start = buffer + buffer_examples_offset * datum_count;
-  hid_t output_type = get_hdf5_type(buffer_partition_start);
-  LOG(INFO) << "Loading dataset to buffer starting at " << buffer_partition_start;
-  LOG(INFO) << "output_type is " << output_type << " with size " << H5Tget_size(output_type);
+  hid_t output_type = get_hdf5_type(buffer_partition_start);  // probably H5T_NATIVE_FLOAT or H5T_NATIVE_DOUBLE
+  //LOG(INFO) << "Loading dataset to buffer starting at " << buffer_partition_start;
+  //LOG(INFO) << "output_type is " << output_type << " with size " << H5Tget_size(output_type);
   hdf5_load_nd_dataset_helper_1(buffer_partition_start, file_id, dataset_name_, datum_dims,
     output_type, index_start, index_max);
-  LOG(INFO) << "Just after load_nd_helper_1";
+  //LOG(INFO) << "Just after load_nd_helper_1";
 
   return index_max - index_start;
 }

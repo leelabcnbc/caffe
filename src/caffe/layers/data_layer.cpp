@@ -141,7 +141,10 @@ void DataLayer<Dtype>::InternalThreadEntry() {
         top_label[item_id] = datum.label();
 
     } else {
-      // HDF5 version, simpler because data in buffer is already the correct type: Dtype.
+      // HDF5 version, simpler because data in buffer is already the
+      // correct type: Dtype. The conversion, if any, from another
+      // type (like uint8) to Dtype (float or double) was already done
+      // by H5Dread.
 
       int h_off = 0;
       int w_off = 0;
@@ -223,15 +226,8 @@ void DataLayer<Dtype>::InternalThreadEntry() {
   // Cleanup
   switch (this->layer_param_.data_param().backend()) {
   case DataParameter_DB_HDF5:
+    // reset buffer to empty state so more data will be loaded from HDF5 file on next call to EnsureNextHdf5BatchLoaded
     hdf_buffer_loaded_ = 0;
-
-    // NEW VERSION: free and recreate buffers each time:
-    delete[] hdf_buffer_data_;
-    hdf_buffer_data_ = NULL;
-    if (output_labels_) {
-      delete[] hdf_buffer_label_;
-      hdf_buffer_label_ = NULL;
-    }
     break;
   default:
     break;
@@ -253,12 +249,10 @@ DataLayer<Dtype>::~DataLayer<Dtype>() {
     break;
   case DataParameter_DB_HDF5:
     if (hdf_buffer_data_) {
-      LOG(INFO) << "Calling delete on hdf_buffer_data_ at " << hdf_buffer_data_;
       delete[] hdf_buffer_data_;
       hdf_buffer_data_ = NULL;
     }
     if (hdf_buffer_label_) {
-      LOG(INFO) << "Calling delete on hdf_buffer_label_ at " << hdf_buffer_label_;
       delete[] hdf_buffer_label_;
       hdf_buffer_label_ = NULL;
     }
@@ -280,11 +274,6 @@ void DataLayer<Dtype>::SetUp(const vector<Blob<Dtype>*>& bottom,
     CHECK_GE(this->layer_param_.data_param().label_dim(), 1) << "label_dim should be 1 or greater";
   }
   
-  // Init to suppress warnings about uninitialized variables
-  //hdf_num_files_ = -1;
-  //hdf_current_file_ = -1;
-  //hdf_current_row_ = -1;
-
   // Initialize DB
   switch (this->layer_param_.data_param().backend()) {
   case DataParameter_DB_LEVELDB:
@@ -324,14 +313,6 @@ void DataLayer<Dtype>::SetUp(const vector<Blob<Dtype>*>& bottom,
     break;
   case DataParameter_DB_HDF5:
     {
-    // Init pointers to NULL (only one will be used for data and one for label)
-    // hdf_buffer_data_uint8_ = NULL;
-    // hdf_buffer_data_float_ = NULL;
-    // hdf_buffer_data_double_ = NULL;
-    // hdf_buffer_label_uint8_ = NULL;
-    // hdf_buffer_label_float_ = NULL;
-    // hdf_buffer_label_double_ = NULL;
-
     hdf_buffer_data_ = NULL;
     hdf_buffer_label_ = NULL;
     hdf_datumdims_init_ = false;
@@ -351,37 +332,14 @@ void DataLayer<Dtype>::SetUp(const vector<Blob<Dtype>*>& bottom,
     hdf_num_files_ = hdf_filenames_.size();
     hdf_current_file_ = 0;
     hdf_current_row_ = 0;
-    LOG(INFO) << "Number of files: " << hdf_num_files_;
+    LOG(INFO) << "Found " << hdf_num_files_ << " HDF5 files listed in " << source;
     CHECK_GT(hdf_num_files_, 0) << source << " listed no HDF5 files";
 
     hdf_buffer_loaded_ = 0;
 
     // Load the first batch from HDF5 file and initialize the line counter.
-    // Before:
-
-    LOG(INFO) << "\n\nEnsure loaded #1";
+    LOG(INFO) << "Loading first batch from HDF5 file to initialize sizes";
     EnsureNextHdf5BatchLoaded();
-    hdf_buffer_loaded_ = 0;
-
-    delete[] hdf_buffer_data_;
-    hdf_buffer_data_ = NULL;
-    if (output_labels_) {
-      delete[] hdf_buffer_label_;
-      hdf_buffer_label_ = NULL;
-    }
-    hdf_datumdims_init_ = false;
-
-    LOG(INFO) << "\n\nEnsure loaded #2";
-    EnsureNextHdf5BatchLoaded();
-    hdf_buffer_loaded_ = 0;
-
-    LOG(INFO) << "\n\nEnsure loaded #3";
-    EnsureNextHdf5BatchLoaded();
-    // After: these are updated and filled with data
-    //   unsigned int hdf_current_file_;
-    //   hsize_t hdf_current_row_;
-    //   Blob<Dtype> buffer_data_;  // For partial reads and reads of uncropped images
-    //   Blob<Dtype> buffer_label_; // For partial reads
     }
     break;
   default:
@@ -419,7 +377,7 @@ void DataLayer<Dtype>::SetUp(const vector<Blob<Dtype>*>& bottom,
 
   // Figure out the shape of each data point
   if (this->layer_param_.data_param().backend() == DataParameter_DB_HDF5) {
-    CHECK_GE(hdf_data_datumdims_.size(), 3) << "data does not have channels, height, and width";
+    CHECK_EQ(hdf_data_datumdims_.size(), 3) << "data does not have channels, height, and width";
     datum_channels_ = hdf_data_datumdims_[0];
     datum_height_ = hdf_data_datumdims_[1];
     datum_width_ = hdf_data_datumdims_[2];
@@ -477,7 +435,7 @@ void DataLayer<Dtype>::SetUp(const vector<Blob<Dtype>*>& bottom,
   // check if we want to have mean
   if (this->layer_param_.data_param().has_mean_file()) {
     const string& mean_file = this->layer_param_.data_param().mean_file();
-    LOG(INFO) << "Loading mean file from" << mean_file;
+    LOG(INFO) << "Loading mean file from " << mean_file;
     BlobProto blob_proto;
     ReadProtoFromBinaryFileOrDie(mean_file.c_str(), &blob_proto);
     data_mean_.FromProto(blob_proto);
@@ -506,22 +464,14 @@ void DataLayer<Dtype>::SetUp(const vector<Blob<Dtype>*>& bottom,
 
 template <typename Dtype>
 void DataLayer<Dtype>::EnsureNextHdf5BatchLoaded() {
-  LOG(INFO) << "EnsureNextHdf5BatchLoaded called.";
-  // not sure if all are needed...
+  //LOG(INFO) << "EnsureNextHdf5BatchLoaded called.";
+
   const unsigned batch_size = this->layer_param_.data_param().batch_size();
   CHECK_GT(batch_size, 0);
   
   //const int data_count = (*top)[0]->count() / (*top)[0]->num();              // JBY: size of one data point = 3*256*256 = 196608
   //const int label_data_count = (*top)[1]->count() / (*top)[1]->num();        // JBY: size of one label = 1
   
-  // Load the first HDF5 file and initialize the line counter.
-  // Before: 
-  // Inside -----> EnsureNextHdf5BatchLoaded();
-  // After: these are updated and filled with data
-  //   unsigned int hdf_current_file_;
-  //   hsize_t hdf_current_row_;
-  //   Blob<Dtype> buffer_data_;  // For partial reads and reads of uncropped images
-  //   Blob<Dtype> buffer_label_; // For partial reads
   const int MIN_DATA_DIM = 2;
   const int MAX_DATA_DIM = 4;
   const int MIN_LABEL_DIM = 1;
@@ -529,24 +479,12 @@ void DataLayer<Dtype>::EnsureNextHdf5BatchLoaded() {
 
   LOG(INFO) << "Got here, hdf_buffer_loaded_ is " << hdf_buffer_loaded_ << " and batch_size is " << batch_size;
   while (hdf_buffer_loaded_ < batch_size) {
-    // Load next blob
-    // Open next file
-    
-    // at start of loop:
-    //  - hdf_current_file_ is valid
-    //  - hdf_current_row_ is valid
-
-    // 0. Get dataset type and store for reference
-    //H5T_class_t data_class_ = hdf5_get_dataset_datatype(file_id, "data");
-    //H5T_class_t label_class_ = hdf5_get_dataset_datatype(file_id, "label");
-
     string& filename = hdf_filenames_[hdf_current_file_];
 
-    LOG(INFO) << "Loading HDF5 file: " << filename;
+    //LOG(INFO) << "Loading HDF5 file: " << filename;
     hid_t file_id = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
     CHECK_GE(file_id, 0) << "Failed opening HDF5 file " << filename;
     
-    LOG(INFO) << "Got here, hdf_datumdims_init_ is " << hdf_datumdims_init_;
     if (!hdf_datumdims_init_) {
       hdf_data_datumdims_ = hdf5_get_dataset_datumdims(file_id, "data");
       LOG(INFO) << "Loaded hdf_data_datumdims_ of size " << hdf_data_datumdims_.size();
@@ -559,36 +497,24 @@ void DataLayer<Dtype>::EnsureNextHdf5BatchLoaded() {
     }
 
     unsigned n_data_read, n_label_read;
-    LOG(INFO) << "Before read, buffer is " << hdf_buffer_data_;
-    n_data_read = hdf5__jason_load(file_id, "data", MIN_DATA_DIM, MAX_DATA_DIM,
-                                   hdf_buffer_data_, hdf_buffer_loaded_, batch_size,
-                                   hdf_current_row_, batch_size - hdf_buffer_loaded_);
-    LOG(INFO) << "After read, buffer is " << hdf_buffer_data_;
+    //LOG(INFO) << "Before read, buffer is " << hdf_buffer_data_;
+    n_data_read = hdf5_load_variable_slice(
+      file_id, "data", MIN_DATA_DIM, MAX_DATA_DIM,
+      hdf_buffer_data_, hdf_buffer_loaded_, batch_size,
+      hdf_current_row_, batch_size - hdf_buffer_loaded_);
+    //LOG(INFO) << "After read, buffer is " << hdf_buffer_data_;
     if (output_labels_) {
-      n_label_read = hdf5__jason_load(file_id, "label", MIN_LABEL_DIM, MAX_LABEL_DIM,
-                                      hdf_buffer_label_, hdf_buffer_loaded_, batch_size,
-                                      hdf_current_row_, batch_size - hdf_buffer_loaded_);
+      n_label_read = hdf5_load_variable_slice(
+        file_id, "label", MIN_LABEL_DIM, MAX_LABEL_DIM,
+        hdf_buffer_label_, hdf_buffer_loaded_, batch_size,
+        hdf_current_row_, batch_size - hdf_buffer_loaded_);
       CHECK_EQ(n_data_read, n_label_read) << "Read a different number of data points vs. labels";
     }
     
     herr_t status = H5Fclose(file_id);
     CHECK_GE(status, 0) << "Failed to close HDF5 file " << filename;
 
-    // HACK GO TO NEXT FILE
-    if (hdf_filenames_.size() > 1) {
-      LOG(INFO) << "HACK bumping to next file";
-      hdf_current_file_ += 1;
-      if (hdf_current_file_ == hdf_num_files_) {
-        hdf_current_file_ = 0;
-        LOG(INFO) << "looping around to first HDF5 file";
-      }
-    } else {
-      LOG(INFO) << "UUMMMMMMMMMMMMMMM";
-    }
-    hdf_current_row_ = 0;
-    // HACK
-
-    LOG(INFO) << "Loaded " << n_data_read << " examples from " << filename;
+    //LOG(INFO) << "Loaded " << n_data_read << " examples from " << filename;
     if (n_data_read == batch_size) {
       // We loaded everything we need, and there may well be more in the file
       hdf_current_row_ += n_data_read;
@@ -598,34 +524,18 @@ void DataLayer<Dtype>::EnsureNextHdf5BatchLoaded() {
         hdf_current_file_ += 1;
         if (hdf_current_file_ == hdf_num_files_) {
           hdf_current_file_ = 0;
-          LOG(INFO) << "looping around to first HDF5 file";
+          LOG(INFO) << "Looping around to first HDF5 file";
         }
       }
       hdf_current_row_ = 0;
     }
 
     hdf_buffer_loaded_ += n_data_read;
-    LOG(INFO) << "Incremented hdf_buffer_loaded_ by " << n_data_read << " to " << hdf_buffer_loaded_;
+    //LOG(INFO) << "Incremented hdf_buffer_loaded_ by " << n_data_read << " to " << hdf_buffer_loaded_;
   }
+
+  //LOG(INFO) << "Finished filling buffer from HDF5 file";
 }
-
-
-// NOT USED
-//template <typename Dtype>
-//void DataLayer<Dtype>::CopyHdfBufferToBlob() {
-//  // Copy the (possibly small) buffer to the (possibly larger) prefetch blob
-//  // THIS IS NOT WRITTEN YET, JUST PASTED
-//  if (n_data_read > 0) {
-//    caffe_copy(buffer_data_.count(),
-//               buffer_data_.cpu_data(),
-//               prefetch_data_.mutable_cpu_data() + prefetch_data_.offset(hdf_buffer_loaded_, 0, 0, 0));
-//    if (output_labels_) {
-//      caffe_copy(buffer_label_.count(),
-//                 buffer_label_.cpu_data(),
-//                 prefetch_label_.mutable_cpu_data() + prefetch_label_.offset(hdf_buffer_loaded_, 0, 0, 0));
-//    }
-//  }
-//}
 
 template <typename Dtype>
 void DataLayer<Dtype>::CreatePrefetchThread() {
