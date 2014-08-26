@@ -397,15 +397,15 @@ void read_dataset_jason_float()
 
 void read_dataset_jason_float_slab()
 {
+  // INPUT SELECTIONS
   hid_t file_id = H5Fopen(FLOATFILE, H5F_ACC_RDONLY, H5P_DEFAULT);
 
   std::vector<hsize_t> data_dims = hdf5_get_dataset_datadims(file_id, "data");
   cout << "Loaded data with dims " << data_dims << endl;
 
-
   hid_t output_type = H5T_NATIVE_FLOAT;
   cout << "output_type is " << output_type << " with size " << H5Tget_size(output_type) << endl;
-
+  
   hid_t dataset = H5Dopen(file_id, DATASETNAME, H5P_DEFAULT);
   hid_t dataspace = H5Dget_space(dataset);
 
@@ -437,11 +437,140 @@ void read_dataset_jason_float_slab()
   delete[] count;
   //CHECK_GE(status, 0) << "Failed to select hyperslab for dataset " << dataset_name_;
 
+
+  // OUTPUT SELECTIONS
+  hsize_t* dims_buffer = new hsize_t[NDIM];    /* size of the hyperslab in the file */
+  dims_buffer[0] = SLABEND - SLABSTART;
+  dims_buffer[1] = NC;
+  dims_buffer[2] = NI;
+  dims_buffer[3] = NJ;
+  hid_t memspace = H5Screate_simple(NDIM, dims_buffer, NULL);
+
+  cout << "dims_buffer is [";
+  for (int d = 0; d < NDIM; d++)
+    cout << " " << dims_buffer[d];
+  cout << " ]" << endl;
+
+  /* 
+   * Define memory hyperslab. 
+   */
+  // Skip for now??
+  // offset_out[0] = 3;
+  // offset_out[1] = 0;
+  // offset_out[2] = 0;
+  // count_out[0]  = NX_SUB;
+  // count_out[1]  = NY_SUB;
+  // count_out[2]  = 1;
+  // status = H5Sselect_hyperslab (memspace, H5S_SELECT_SET, offset_out, NULL, 
+  //                               count_out, NULL);
+
   float* buffer = new float[N_slab];
   cout << "Allocated buffer of size " << N_slab << " at location " << buffer << endl;
   cout << "Loading dataset to buffer starting at " << buffer << endl;
 
-  H5Dread(dataset, output_type, H5S_ALL, dataspace, H5P_DEFAULT, buffer);
+  // WORKS!
+  // First line fails, second works! Makes no sense given the most straightforward interpretation of the documentation
+  //H5Dread(dataset, output_type, H5S_ALL, dataspace, H5P_DEFAULT, buffer);
+  H5Dread(dataset, output_type, memspace, dataspace, H5P_DEFAULT, buffer);
+
+  cout << "Read this data:" << endl;
+  int counter = 0;
+  for (int b = 0; b < (SLABEND-SLABSTART); b++) {
+    for (int c = 0; c < NC; c++) {
+      for (int i = 0; i < NI; i++) {
+        for (int j = 0; j < NJ; j++) {
+          cout << buffer[counter] << " ";
+          counter++;
+        }
+        cout << endl;
+      }
+      cout << endl;
+    }
+    cout << endl;
+  }
+
+  H5Dclose(dataset);
+  H5Sclose(dataspace);
+  H5Fclose(file_id);
+}
+
+void read_dataset_jason_int2float_slab()
+{
+  // INPUT SELECTIONS
+  hid_t file_id = H5Fopen(UINTFILE, H5F_ACC_RDONLY, H5P_DEFAULT);
+
+  std::vector<hsize_t> data_dims = hdf5_get_dataset_datadims(file_id, "data");
+  cout << "Loaded data with dims " << data_dims << endl;
+  
+  hid_t dataset = H5Dopen(file_id, DATASETNAME, H5P_DEFAULT);
+  hid_t dataspace = H5Dget_space(dataset);
+
+
+  hsize_t* offset = new hsize_t[NDIM]; /* hyperslab offset in the file */
+  hsize_t* count = new hsize_t[NDIM];    /* size of the hyperslab in the file */
+  offset[0] = SLABSTART;
+  count[0] = SLABEND - SLABSTART;
+  for (int d = 1; d < NDIM; d++) {
+    // return the complete block of data along all dimensions except maybe 0
+    offset[d] = 0;
+    count[d] = data_dims[d];
+  }
+
+  cout << "offset is [";
+  for (int d = 0; d < NDIM; d++)
+    cout << " " << offset[d];
+  cout << " ]" << endl;
+  cout << "count is [";
+  for (int d = 0; d < NDIM; d++)
+    cout << " " << count[d];
+  cout << " ]" << endl;
+
+  // Select the hyperslab to be read
+  cout << "dataspace is " << dataspace << endl;
+  H5Sselect_hyperslab(dataspace, H5S_SELECT_SET, offset, NULL, count, NULL);
+  cout << "dataspace is " << dataspace << endl;
+  delete[] offset;
+  delete[] count;
+  //CHECK_GE(status, 0) << "Failed to select hyperslab for dataset " << dataset_name_;
+
+
+  // OUTPUT SELECTIONS
+  hid_t output_type = H5T_NATIVE_FLOAT;
+  cout << "output_type is " << output_type << " with size " << H5Tget_size(output_type) << endl;
+
+  hsize_t* dims_buffer = new hsize_t[NDIM];    /* size of the hyperslab in the file */
+  dims_buffer[0] = SLABEND - SLABSTART;
+  dims_buffer[1] = NC;
+  dims_buffer[2] = NI;
+  dims_buffer[3] = NJ;
+  hid_t memspace = H5Screate_simple(NDIM, dims_buffer, NULL);
+
+  cout << "dims_buffer is [";
+  for (int d = 0; d < NDIM; d++)
+    cout << " " << dims_buffer[d];
+  cout << " ]" << endl;
+
+  /* 
+   * Define memory hyperslab. 
+   */
+  // Skip for now??
+  // offset_out[0] = 3;
+  // offset_out[1] = 0;
+  // offset_out[2] = 0;
+  // count_out[0]  = NX_SUB;
+  // count_out[1]  = NY_SUB;
+  // count_out[2]  = 1;
+  // status = H5Sselect_hyperslab (memspace, H5S_SELECT_SET, offset_out, NULL, 
+  //                               count_out, NULL);
+
+  float* buffer = new float[N_slab];
+  cout << "Allocated buffer of size " << N_slab << " at location " << buffer << endl;
+  cout << "Loading dataset to buffer starting at " << buffer << endl;
+
+  // WORKS!
+  // First line fails, second works! Makes no sense given the most straightforward interpretation of the documentation
+  //H5Dread(dataset, output_type, H5S_ALL, dataspace, H5P_DEFAULT, buffer);
+  H5Dread(dataset, output_type, memspace, dataspace, H5P_DEFAULT, buffer);
 
   cout << "Read this data:" << endl;
   int counter = 0;
@@ -601,7 +730,8 @@ int main()
   //read_dataset();
   
   //read_dataset_jason_float();
-  read_dataset_jason_float_slab();
+  //read_dataset_jason_float_slab();
+  read_dataset_jason_int2float_slab();
 
   return 0;
 }
