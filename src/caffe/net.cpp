@@ -528,21 +528,21 @@ void Net<Dtype>::BackwardFromTo(int start, int end) {
 }
 
 // JBY: added (but now deprecated by recently added BackwardFromTo)
-template <typename Dtype>
-Dtype Net<Dtype>::DEP_BackwardPartial(int layer_start, int layer_end) {
-  CHECK_GE(layer_start, 0);
-  CHECK_GE(layer_end, 0);
-  CHECK_LE(layer_start, layers_.size());
-  CHECK_LE(layer_end, layers_.size());
-  for (int i = layer_start - 1; i >= layer_end; --i) {
-    if (layer_need_backward_[i]) {
-      //LOG(ERROR) << "*** Backwarding " << layer_names_[i];
-      layers_[i]->Backward(
-          top_vecs_[i], bottom_need_backward_[i], &bottom_vecs_[i]);
-      if (debug_info_) { BackwardDebugInfo(i); }
-    }
-  }
-}
+// template <typename Dtype>
+// Dtype Net<Dtype>::DEP_BackwardPartial(int layer_start, int layer_end) {
+//   CHECK_GE(layer_start, 0);
+//   CHECK_GE(layer_end, 0);
+//   CHECK_LE(layer_start, layers_.size());
+//   CHECK_LE(layer_end, layers_.size());
+//   for (int i = layer_start - 1; i >= layer_end; --i) {
+//     if (layer_need_backward_[i]) {
+//       //LOG(ERROR) << "*** Backwarding " << layer_names_[i];
+//       layers_[i]->Backward(
+//           top_vecs_[i], bottom_need_backward_[i], &bottom_vecs_[i]);
+//       if (debug_info_) { BackwardDebugInfo(i); }
+//     }
+//   }
+// }
 
 template <typename Dtype>
 void Net<Dtype>::ForwardDebugInfo(const int layer_id) {

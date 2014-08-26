@@ -58,7 +58,7 @@ class DataLayer : public Layer<Dtype>, public InternalThread {
   virtual void InternalThreadEntry();
 
   // HDF5-specific methods
-  virtual void LoadNextHdfBatch();
+  virtual void EnsureNextHdf5BatchLoaded();
 
   shared_ptr<Caffe::RNG> prefetch_rng_;
 

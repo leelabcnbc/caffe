@@ -37,7 +37,9 @@ void DataLayer<Dtype>::InternalThreadEntry() {
   // Preload
   switch (this->layer_param_.data_param().backend()) {
   case DataParameter_DB_HDF5:
-    LoadNextHdfBatch();
+    EnsureNextHdf5BatchLoaded();
+    break;
+  default:
     break;
   }
 
@@ -47,6 +49,7 @@ void DataLayer<Dtype>::InternalThreadEntry() {
   const int width = datum_width_;
   const int size = datum_size_;
   const Dtype* mean = data_mean_.cpu_data();
+  bool use_datum;
   for (int item_id = 0; item_id < batch_size; ++item_id) {
     // get a blob
     switch (this->layer_param_.data_param().backend()) {
@@ -54,45 +57,115 @@ void DataLayer<Dtype>::InternalThreadEntry() {
       CHECK(iter_);
       CHECK(iter_->Valid());
       datum.ParseFromString(iter_->value().ToString());
+      use_datum = true;
       break;
     case DataParameter_DB_LMDB:
       CHECK_EQ(mdb_cursor_get(mdb_cursor_, &mdb_key_,
               &mdb_value_, MDB_GET_CURRENT), MDB_SUCCESS);
       datum.ParseFromArray(mdb_value_.mv_data,
           mdb_value_.mv_size);
+      use_datum = true;
       break;
     case DataParameter_DB_HDF5:
-      // HERE
-      // HERE: COPY TO DATUM?
-      // HERE: ALSO LABELS??
+      use_datum = false;
       break;
     default:
       LOG(FATAL) << "Unknown database backend";
     }
 
-    const string& data = datum.data();
-    if (crop_size) {
-      CHECK(data.size()) << "Image cropping only support uint8 data";
-      int h_off, w_off;
-      // We only do random crop when we do training.
-      if (phase_ == Caffe::TRAIN) {
-        h_off = PrefetchRand() % (height - crop_size);
-        w_off = PrefetchRand() % (width - crop_size);
+
+    // Messy split into LevelDB + LMDB version and HDF5 version. An inner if
+    // statement would be cleaner but probably slower :-/.
+    if (use_datum) {
+      // LevelDB and LDMB version
+
+      const string& data = datum.data();
+
+      if (crop_size) {
+        CHECK(data.size()) << "Image cropping only support uint8 data";
+        int h_off, w_off;
+        // We only do random crop when we do training.
+        if (phase_ == Caffe::TRAIN) {
+          h_off = PrefetchRand() % (height - crop_size);
+          w_off = PrefetchRand() % (width - crop_size);
+        } else {
+          h_off = (height - crop_size) / 2;
+          w_off = (width - crop_size) / 2;
+        }
+        if (mirror && PrefetchRand() % 2) {
+          // Copy mirrored version
+          for (int c = 0; c < channels; ++c) {
+            for (int h = 0; h < crop_size; ++h) {
+              for (int w = 0; w < crop_size; ++w) {
+                int top_index = ((item_id * channels + c) * crop_size + h)
+                  * crop_size + (crop_size - 1 - w);
+                int data_index = (c * height + h + h_off) * width + w + w_off;
+                Dtype datum_element =
+                  static_cast<Dtype>(static_cast<uint8_t>(data[data_index]));
+                top_data[top_index] = (datum_element - mean[data_index]) * scale;
+              }
+            }
+          }
+        } else {
+          // Normal copy
+          for (int c = 0; c < channels; ++c) {
+            for (int h = 0; h < crop_size; ++h) {
+              for (int w = 0; w < crop_size; ++w) {
+                int top_index = ((item_id * channels + c) * crop_size + h)
+                  * crop_size + w;
+                int data_index = (c * height + h + h_off) * width + w + w_off;
+                Dtype datum_element =
+                  static_cast<Dtype>(static_cast<uint8_t>(data[data_index]));
+                top_data[top_index] = (datum_element - mean[data_index]) * scale;
+              }
+            }
+          }
+        }
       } else {
-        h_off = (height - crop_size) / 2;
-        w_off = (width - crop_size) / 2;
+        // we will prefer to use data() first, and then try float_data()
+        if (data.size()) {
+          for (int j = 0; j < size; ++j) {
+            Dtype datum_element =
+              static_cast<Dtype>(static_cast<uint8_t>(data[j]));
+            top_data[item_id * size + j] = (datum_element - mean[j]) * scale;
+          }
+        } else {
+          for (int j = 0; j < size; ++j) {
+            top_data[item_id * size + j] =
+              (datum.float_data(j) - mean[j]) * scale;
+          }
+        }
       }
+
+      if (output_labels_)
+        top_label[item_id] = datum.label();
+
+    } else {
+      // HDF5 version, simpler because data in buffer is already the correct type: Dtype.
+
+      int h_off = 0;
+      int w_off = 0;
+      if (crop_size) {
+        // We only do random crop when we do training.
+        if (phase_ == Caffe::TRAIN) {
+          h_off = PrefetchRand() % (height - crop_size);
+          w_off = PrefetchRand() % (width - crop_size);
+        } else {
+          h_off = (height - crop_size) / 2;
+          w_off = (width - crop_size) / 2;
+        }
+      }
+
       if (mirror && PrefetchRand() % 2) {
         // Copy mirrored version
         for (int c = 0; c < channels; ++c) {
           for (int h = 0; h < crop_size; ++h) {
             for (int w = 0; w < crop_size; ++w) {
               int top_index = ((item_id * channels + c) * crop_size + h)
-                              * crop_size + (crop_size - 1 - w);
-              int data_index = (c * height + h + h_off) * width + w + w_off;
-              Dtype datum_element =
-                  static_cast<Dtype>(static_cast<uint8_t>(data[data_index]));
-              top_data[top_index] = (datum_element - mean[data_index]) * scale;
+                * crop_size + (crop_size - 1 - w);
+              int mean_index = (c * height + h + h_off) * width + w + w_off;
+              int data_index = size * item_id + mean_index;
+              top_data[top_index] = (hdf_buffer_data_[data_index] - mean[mean_index]) * scale;
             }
           }
         }
@@ -102,35 +175,25 @@ void DataLayer<Dtype>::InternalThreadEntry() {
           for (int h = 0; h < crop_size; ++h) {
             for (int w = 0; w < crop_size; ++w) {
               int top_index = ((item_id * channels + c) * crop_size + h)
-                              * crop_size + w;
-              int data_index = (c * height + h + h_off) * width + w + w_off;
-              Dtype datum_element =
-                  static_cast<Dtype>(static_cast<uint8_t>(data[data_index]));
-              top_data[top_index] = (datum_element - mean[data_index]) * scale;
+                * crop_size + w;
+              int mean_index = (c * height + h + h_off) * width + w + w_off;
+              int data_index = size * item_id + mean_index;
+              top_data[top_index] = (hdf_buffer_data_[data_index] - mean[mean_index]) * scale;
             }
           }
         }
       }
-    } else {
-      // we will prefer to use data() first, and then try float_data()
-      if (data.size()) {
-        for (int j = 0; j < size; ++j) {
-          Dtype datum_element =
-              static_cast<Dtype>(static_cast<uint8_t>(data[j]));
-          top_data[item_id * size + j] = (datum_element - mean[j]) * scale;
-        }
-      } else {
-        for (int j = 0; j < size; ++j) {
-          top_data[item_id * size + j] =
-              (datum.float_data(j) - mean[j]) * scale;
+
+      if (output_labels_) {
+        CHECK_GE(label_channels_, 1) << "label_channels_ should be set to 1 or more";
+        for (int c = 0; c < label_channels_; ++c) {
+          int index = item_id * label_channels_ + c;
+          top_label[index] = hdf_buffer_label_[index];
         }
       }
+
     }
 
-    if (output_labels_) {
-      top_label[item_id] = datum.label();
-      // TODO: deal with multidim label case for HDF5
-    }
     // go to the next iter
     switch (this->layer_param_.data_param().backend()) {
     case DataParameter_DB_LEVELDB:
@@ -161,6 +224,8 @@ void DataLayer<Dtype>::InternalThreadEntry() {
   switch (this->layer_param_.data_param().backend()) {
   case DataParameter_DB_HDF5:
     hdf_buffer_loaded_ = 0;
+    break;
+  default:
     break;
   }
 }
@@ -273,14 +338,13 @@ void DataLayer<Dtype>::SetUp(const vector<Blob<Dtype>*>& bottom,
     hdf_current_file_ = 0;
     hdf_current_row_ = 0;
     LOG(INFO) << "Number of files: " << hdf_num_files_;
+    CHECK_GT(hdf_num_files_, 0) << source << " listed no HDF5 files";
 
-    hdf_data_datumdims_ = hdf5_get_dataset_datumdims(hdf_filenames_[0], "data");
-    hdf_label_datumdims_ = hdf5_get_dataset_datumdims(hdf_filenames_[0], "label");
     hdf_buffer_loaded_ = 0;
 
     // Load the first batch from HDF5 file and initialize the line counter.
     // Before:
-    LoadNextHdfBatch();
+    EnsureNextHdf5BatchLoaded();
     // After: these are updated and filled with data
     //   unsigned int hdf_current_file_;
     //   hsize_t hdf_current_row_;
@@ -409,7 +473,7 @@ void DataLayer<Dtype>::SetUp(const vector<Blob<Dtype>*>& bottom,
 
 
 template <typename Dtype>
-void DataLayer<Dtype>::LoadNextHdfBatch() {
+void DataLayer<Dtype>::EnsureNextHdf5BatchLoaded() {
   // not sure if all are needed...
   const unsigned batch_size = this->layer_param_.hdf5_data_param().batch_size();
   
@@ -418,7 +482,7 @@ void DataLayer<Dtype>::LoadNextHdfBatch() {
   
   // Load the first HDF5 file and initialize the line counter.
   // Before: 
-  // Inside -----> LoadNextHdfBatch();
+  // Inside -----> EnsureNextHdf5BatchLoaded();
   // After: these are updated and filled with data
   //   unsigned int hdf_current_file_;
   //   hsize_t hdf_current_row_;
@@ -449,8 +513,12 @@ void DataLayer<Dtype>::LoadNextHdfBatch() {
     
     if (!hdf_datumdims_init_) {
       hdf_data_datumdims_ = hdf5_get_dataset_datumdims(file_id, "data");
-      if (output_labels_)
+      if (output_labels_) {
         hdf_label_datumdims_ = hdf5_get_dataset_datumdims(file_id, "label");
+        CHECK_EQ(hdf_label_datumdims_[0], this->layer_param_.data_param().label_dim())
+          << " label dim mismatch. (TODO: could list also be empty)?";
+      }
+      hdf_datumdims_init_ = true;
     }
 
     unsigned n_data_read, n_label_read;
@@ -488,21 +556,22 @@ void DataLayer<Dtype>::LoadNextHdfBatch() {
 }
 
 
-template <typename Dtype>
-void DataLayer<Dtype>::CopyHdfBufferToBlob() {
-  // Copy the (possibly small) buffer to the (possibly larger) prefetch blob
-  // THIS IS NOT WRITTEN YET, JUST PASTED
-  if (n_data_read > 0) {
-    caffe_copy(buffer_data_.count(),
-               buffer_data_.cpu_data(),
-               prefetch_data_.mutable_cpu_data() + prefetch_data_.offset(hdf_buffer_loaded_, 0, 0, 0));
-    if (output_labels_) {
-      caffe_copy(buffer_label_.count(),
-                 buffer_label_.cpu_data(),
-                 prefetch_label_.mutable_cpu_data() + prefetch_label_.offset(hdf_buffer_loaded_, 0, 0, 0));
-    }
-  }
-}
+// NOT USED
+//template <typename Dtype>
+//void DataLayer<Dtype>::CopyHdfBufferToBlob() {
+//  // Copy the (possibly small) buffer to the (possibly larger) prefetch blob
+//  // THIS IS NOT WRITTEN YET, JUST PASTED
+//  if (n_data_read > 0) {
+//    caffe_copy(buffer_data_.count(),
+//               buffer_data_.cpu_data(),
+//               prefetch_data_.mutable_cpu_data() + prefetch_data_.offset(hdf_buffer_loaded_, 0, 0, 0));
+//    if (output_labels_) {
+//      caffe_copy(buffer_label_.count(),
+//                 buffer_label_.cpu_data(),
+//                 prefetch_label_.mutable_cpu_data() + prefetch_label_.offset(hdf_buffer_loaded_, 0, 0, 0));
+//    }
+//  }
+//}
 
 template <typename Dtype>
 void DataLayer<Dtype>::CreatePrefetchThread() {
