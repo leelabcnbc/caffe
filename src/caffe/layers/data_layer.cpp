@@ -245,8 +245,10 @@ DataLayer<Dtype>::~DataLayer<Dtype>() {
     break;
   case DataParameter_DB_HDF5:
     if (hdf_buffer_data_)
+      LOG(INFO) << "Calling delete on hdf_buffer_data_ at " << hdf_buffer_data_;
       delete[] hdf_buffer_data_;
     if (hdf_buffer_label_)
+      LOG(INFO) << "Calling delete on hdf_buffer_label_ at " << hdf_buffer_label_;
       delete[] hdf_buffer_label_;
     break;
   default:
@@ -474,8 +476,10 @@ void DataLayer<Dtype>::SetUp(const vector<Blob<Dtype>*>& bottom,
 
 template <typename Dtype>
 void DataLayer<Dtype>::EnsureNextHdf5BatchLoaded() {
+  LOG(INFO) << "EnsureNextHdf5BatchLoaded called.";
   // not sure if all are needed...
-  const unsigned batch_size = this->layer_param_.hdf5_data_param().batch_size();
+  const unsigned batch_size = this->layer_param_.data_param().batch_size();
+  CHECK_GT(batch_size, 0);
   
   //const int data_count = (*top)[0]->count() / (*top)[0]->num();              // JBY: size of one data point = 3*256*256 = 196608
   //const int label_data_count = (*top)[1]->count() / (*top)[1]->num();        // JBY: size of one label = 1
@@ -493,6 +497,7 @@ void DataLayer<Dtype>::EnsureNextHdf5BatchLoaded() {
   const int MIN_LABEL_DIM = 1;
   const int MAX_LABEL_DIM = 2;
 
+  LOG(INFO) << "Got here, hdf_buffer_loaded_ is " << hdf_buffer_loaded_ << " and batch_size is " << batch_size;
   while (hdf_buffer_loaded_ < batch_size) {
     // Load next blob
     // Open next file
@@ -511,12 +516,14 @@ void DataLayer<Dtype>::EnsureNextHdf5BatchLoaded() {
     hid_t file_id = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
     CHECK_GE(file_id, 0) << "Failed opening HDF5 file " << filename;
     
+    LOG(INFO) << "Got here, hdf_datumdims_init_ is " << hdf_datumdims_init_;
     if (!hdf_datumdims_init_) {
       hdf_data_datumdims_ = hdf5_get_dataset_datumdims(file_id, "data");
+      LOG(INFO) << "Loaded hdf_data_datumdims_ of size " << hdf_data_datumdims_.size();
       if (output_labels_) {
         hdf_label_datumdims_ = hdf5_get_dataset_datumdims(file_id, "label");
         CHECK_EQ(hdf_label_datumdims_[0], this->layer_param_.data_param().label_dim())
-          << " label dim mismatch. (TODO: could list also be empty)?";
+          << " label dim mismatch. Did you specify label_dim inside data_param? (TODO: could list also be empty)?";
       }
       hdf_datumdims_init_ = true;
     }
