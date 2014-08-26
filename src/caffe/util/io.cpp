@@ -187,34 +187,80 @@ std::vector<hsize_t> hdf5_load_nd_dataset_helper_0(hid_t file_id, const char* da
 }
 
 
+  /////////////////////////// TEMP DEBUG
+
+template < class T >
+inline std::ostream& operator << (std::ostream& os, const std::vector<T>& v) 
+{
+  os << "[";
+  for (typename std::vector<T>::const_iterator ii = v.begin(); ii != v.end(); ++ii)
+    {
+      os << " " << *ii;
+    }
+  os << " ]";
+  return os;
+ }
+
+  /////////////////////////// TEMP DEBUG
+
 template <typename Dtype>
 void hdf5_load_nd_dataset_helper_1(Dtype* buffer, hid_t file_id, const char* dataset_name_, std::vector<hsize_t> datum_dims, hid_t data_type, unsigned index_start, unsigned index_max) {
   hid_t dataset = H5Dopen(file_id, dataset_name_, H5P_DEFAULT);
   hid_t dataspace = H5Dget_space(dataset);
   
-  int data_dims = datum_dims.size() + 1;
-  hsize_t* offset = new hsize_t[data_dims]; /* hyperslab offset in the file */
-  hsize_t* count = new hsize_t[data_dims];    /* size of the hyperslab in the file */
+  int n_data_dims = datum_dims.size() + 1;
+  hsize_t* offset = new hsize_t[n_data_dims]; /* hyperslab offset in the file */
+  hsize_t* count = new hsize_t[n_data_dims];    /* size of the hyperslab in the file */
   offset[0] = index_start;  // slice block of the appropriate size from dim 0
   count[0] = index_max - index_start;
-  for (int d = 1; d < data_dims; d++) {
+  for (int d = 1; d < n_data_dims; d++) {
     // return the complete block of data along all dimensions except maybe 0
     offset[d] = 0;
     count[d] = datum_dims[d-1];
   }
   // Select the hyperslab to be read
   herr_t status = H5Sselect_hyperslab(dataspace, H5S_SELECT_SET, offset, NULL, count, NULL);
-  delete[] offset;
-  delete[] count;
   CHECK_GE(status, 0) << "Failed to select hyperslab for dataset " << dataset_name_;
 
+
+  // OUTPUT SELECTIONS
+  //hsize_t* dims_buffer = new hsize_t[NDIM];    /* size of the hyperslab in the file */
+  //dims_buffer[0] = SLABEND - SLABSTART;
+  //dims_buffer[1] = NC;
+  //dims_buffer[2] = NI;
+  //dims_buffer[3] = NJ;
+  hid_t memspace = H5Screate_simple(n_data_dims, count, NULL);
+  //delete[] dims_buffer;
+  //dims_buffer = NULL;
+
+  LOG(INFO) << "datum_dims is " << datum_dims;
+  LOG(INFO) << "count is [";
+  for (int d = 0; d < n_data_dims; d++)
+    LOG(INFO) << " " << count[d];
+  LOG(INFO) << " ]";
+
+  delete[] offset;
+  offset = NULL;
+  delete[] count;
+  count = NULL;
+
+
   // Read the data   (INT SPECIFIC)
-  status = H5Dread(dataset, data_type, H5S_ALL, dataspace, H5P_DEFAULT, buffer);
+  LOG(INFO) << " 0 about to call H5Dread with buffer " << buffer << " dataset " << dataset << " dataspace " << dataspace;
+  //  status = H5Dread(dataset, data_type, H5S_ALL, dataspace, H5P_DEFAULT, buffer);
+  status = H5Dread(dataset, data_type, memspace, dataspace, H5P_DEFAULT, buffer);
+  LOG(INFO) << " 0 done with H5Dread";
+
+  // HACK
+  // LOG(INFO) << " 1 about to call H5Dread with buffer " << buffer << " dataset " << dataset << " dataspace " << dataspace;
+  // status = H5Dread(dataset, data_type, H5S_ALL, dataspace, H5P_DEFAULT, buffer);
+  // LOG(INFO) << " 1 done with H5Dread";
   //status = H5LTread_dataset(
   //  file_id, dataset_name_, H5T_NATIVE_UCHAR, blob->mutable_cpu_data());
+  CHECK_GE(status, 0) << "Failed to read dataset " << dataset_name_;
+
   H5Dclose(dataset);
   H5Sclose(dataspace);
-  CHECK_GE(status, 0) << "Failed to read dataset " << dataset_name_;
 }
 ////////////////////////////////////
 
