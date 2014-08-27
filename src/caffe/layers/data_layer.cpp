@@ -477,7 +477,7 @@ void DataLayer<Dtype>::EnsureNextHdf5BatchLoaded() {
   const int MIN_LABEL_DIM = 1;
   const int MAX_LABEL_DIM = 2;
 
-  LOG(INFO) << "Got here, hdf_buffer_loaded_ is " << hdf_buffer_loaded_ << " and batch_size is " << batch_size;
+  //LOG(INFO) << "Got here, hdf_buffer_loaded_ is " << hdf_buffer_loaded_ << " and batch_size is " << batch_size;
   while (hdf_buffer_loaded_ < batch_size) {
     string& filename = hdf_filenames_[hdf_current_file_];
 
