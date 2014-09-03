@@ -1,2 +1,11 @@
+Notes:
+
+Run demo like this:
+j@l [~/s/caffe/jason] $ LD_LIBRARY_PATH=/usr/local/lib:/usr/local/cuda/lib ipython --pylab
+In [1]: from demo_class import *
+In [2]: cam_loop()
+
+
+
 [2014-09-03  3:49:25 pm] 
 0a7e5988866a59727df1be04d819233591cac4a8 cam_loop in demo_class.py is definitely working at this revision.
