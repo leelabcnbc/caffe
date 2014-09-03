@@ -4,6 +4,7 @@
 #include <fstream>  // NOLINT(readability/streams)
 #include <string>
 #include <vector>
+#include <sstream>
 
 #include "caffe/layer.hpp"
 #include "caffe/proto/caffe.pb.h"
@@ -194,6 +195,39 @@ void DataLayer<Dtype>::InternalThreadEntry() {
           top_label[index] = hdf_buffer_label_[index];
         }
       }
+      
+      // DEBUG ONLY
+      // if (item_id == 0) {
+      //   std::stringstream ss;
+
+      //   for (int c = 0; c < 2; ++c) {
+      //     ss << "Channel " << c << std::endl;
+      //     for (int h = 0; h < 8; ++h) {
+      //       ss << "[";
+      //       for (int w = 0; w < 8; ++w) {
+      //         int top_index = ((item_id * channels + c) * crop_size + h)
+      //           * crop_size + w;
+      //         ss << " " << top_data[top_index];
+      //       }
+      //       ss << " ]" << std::endl;
+      //     }
+      //   }
+      //   LOG(INFO) << "Got example data:\n" << ss.str();
+
+      //   ss.str("");
+      //   if (output_labels_) {
+      //     CHECK_GE(label_channels_, 1) << "label_channels_ should be set to 1 or more";
+      //     LOG(INFO) << "label_channels_ is " << label_channels_;
+      //     ss << "[";
+      //     for (int c = 0; c < label_channels_; ++c) {
+      //       int index = item_id * label_channels_ + c;
+      //       ss << " " << top_label[index];
+      //     }
+      //     ss << " ]" << std::endl;
+      //     LOG(INFO) << "Got example label:\n" << ss.str();
+      //   }
+      // }
+      // DEBUG ONLY
 
     }
 
@@ -381,7 +415,7 @@ void DataLayer<Dtype>::SetUp(const vector<Blob<Dtype>*>& bottom,
     datum_channels_ = hdf_data_datumdims_[0];
     datum_height_ = hdf_data_datumdims_[1];
     datum_width_ = hdf_data_datumdims_[2];
-    label_channels_ = (output_labels_ && hdf_data_datumdims_.size()) > 0 ? hdf_data_datumdims_[0] : 1;
+    label_channels_ = (output_labels_ && hdf_label_datumdims_.size()) > 0 ? hdf_label_datumdims_[0] : 1;
   } else {
     label_channels_ = 1;  // Multidimensional labels only supported by HDF5 backend
     // Read a data point, and use it to initialize the top blob.
