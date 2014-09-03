@@ -128,6 +128,35 @@ class HingeLossLayer : public LossLayer<Dtype> {
       const vector<bool>& propagate_down, vector<Blob<Dtype>*>* bottom);
 };
 
+/* MultiLabelHingeLossLayer
+   TODO: more documentation.
+
+   Two differences:
+   First, label comes in as Nxdim array of {-1, 0, 1} values instead of Nx1 vector of class_id values.
+
+   Second, we support labels of 0, which means to ignore that class for this example.
+   label of:
+   -1 should be -1 or less
+   1 shoudl be 1 or more
+   0 can be anything and does not contribute to cost.
+*/
+template <typename Dtype>
+class MultiLabelHingeLossLayer : public LossLayer<Dtype> {
+ public:
+  explicit MultiLabelHingeLossLayer(const LayerParameter& param)
+      : LossLayer<Dtype>(param) {}
+
+  virtual inline LayerParameter_LayerType type() const {
+    return LayerParameter_LayerType_MULTI_LABEL_HINGE_LOSS;
+  }
+
+ protected:
+  virtual Dtype Forward_cpu(const vector<Blob<Dtype>*>& bottom,
+      vector<Blob<Dtype>*>* top);
+  virtual void Backward_cpu(const vector<Blob<Dtype>*>& top,
+      const vector<bool>& propagate_down, vector<Blob<Dtype>*>* bottom);
+};
+
 /* InfogainLossLayer
 */
 template <typename Dtype>
