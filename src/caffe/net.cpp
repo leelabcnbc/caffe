@@ -77,7 +77,7 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
       AppendTop(param, layer_id, top_id, &available_blobs, &blob_name_to_idx);
     }
     // After this layer is connected, set it up.
-    // LOG(INFO) << "Setting up " << layer_names_[layer_id];
+    LOG(INFO) << "JBY Setting up " << layer_names_[layer_id];
     layers_[layer_id]->SetUp(bottom_vecs_[layer_id], &top_vecs_[layer_id]);
     for (int top_id = 0; top_id < top_vecs_[layer_id].size(); ++top_id) {
       LOG(INFO) << "Top shape: " << top_vecs_[layer_id][top_id]->num() << " "
@@ -528,21 +528,21 @@ void Net<Dtype>::BackwardFromTo(int start, int end) {
 }
 
 // JBY: added (but now deprecated by recently added BackwardFromTo)
-template <typename Dtype>
-Dtype Net<Dtype>::DEP_BackwardPartial(int layer_start, int layer_end) {
-  CHECK_GE(layer_start, 0);
-  CHECK_GE(layer_end, 0);
-  CHECK_LE(layer_start, layers_.size());
-  CHECK_LE(layer_end, layers_.size());
-  for (int i = layer_start - 1; i >= layer_end; --i) {
-    if (layer_need_backward_[i]) {
-      //LOG(ERROR) << "*** Backwarding " << layer_names_[i];
-      layers_[i]->Backward(
-          top_vecs_[i], bottom_need_backward_[i], &bottom_vecs_[i]);
-      if (debug_info_) { BackwardDebugInfo(i); }
-    }
-  }
-}
+// template <typename Dtype>
+// Dtype Net<Dtype>::DEP_BackwardPartial(int layer_start, int layer_end) {
+//   CHECK_GE(layer_start, 0);
+//   CHECK_GE(layer_end, 0);
+//   CHECK_LE(layer_start, layers_.size());
+//   CHECK_LE(layer_end, layers_.size());
+//   for (int i = layer_start - 1; i >= layer_end; --i) {
+//     if (layer_need_backward_[i]) {
+//       //LOG(ERROR) << "*** Backwarding " << layer_names_[i];
+//       layers_[i]->Backward(
+//           top_vecs_[i], bottom_need_backward_[i], &bottom_vecs_[i]);
+//       if (debug_info_) { BackwardDebugInfo(i); }
+//     }
+//   }
+// }
 
 template <typename Dtype>
 void Net<Dtype>::ForwardDebugInfo(const int layer_id) {

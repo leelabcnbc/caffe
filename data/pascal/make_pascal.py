@@ -33,12 +33,12 @@ def main():
     random.shuffle(trainval_ids)
 
     # Tiny versions
-    #make_pascal('train',    train_ids[:10],    image_dir, annotation_dir, save_as_floats = True, n_per_file = 1000)
-    #make_pascal('val',      val_ids[:10],      image_dir, annotation_dir, save_as_floats = True, n_per_file = 1000)
+    make_pascal('train',    train_ids[:10],    image_dir, annotation_dir, save_as_floats = False, n_per_file = 1000)
+    make_pascal('val',      val_ids[:10],      image_dir, annotation_dir, save_as_floats = False, n_per_file = 1000)
 
     # Whole versions
-    make_pascal('train',    train_ids,    image_dir, annotation_dir, save_as_floats = True, n_per_file = 1000)
-    make_pascal('val',      val_ids,      image_dir, annotation_dir, save_as_floats = True, n_per_file = 1000)
+    #make_pascal('train',    train_ids,    image_dir, annotation_dir, save_as_floats = False, n_per_file = 100000)
+    #make_pascal('val',      val_ids,      image_dir, annotation_dir, save_as_floats = False, n_per_file = 100000)
 
 
 
