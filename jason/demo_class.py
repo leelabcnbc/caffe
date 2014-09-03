@@ -1,7 +1,39 @@
 #! /usr/bin/env ipythonpl
 
 import cv2
+
+import matplotlib
+print 'Available backends are:', matplotlib.rcsetup.interactive_bk
+backend_idx = 7
+# 3 and 4 ok
+# 5
+#Elapsed plot real: 0.062861, sys: 0.074177
+#Elapsed draw real: 0.069773, sys: 0.193874
+# 6
+#Elapsed plot real: 0.061863, sys: 0.150741
+#Elapsed draw real: 0.079896, sys: 0.224259
+# 7
+#Elapsed plot real: 0.061132, sys: 0.140427
+#Elapsed draw real: 0.072132, sys: 0.200980
+
+# osx
+#Elapsed plot real: 0.062201, sys: 0.115562
+#Elapsed draw real: 0.037387, sys: 0.082528
+# qt
+#Elapsed plot real: 0.065629, sys: 0.125319
+#Elapsed draw real: 0.044839, sys: 0.119022
+# qt4
+#Elapsed plot real: 0.060072, sys: 0.116999
+#Elapsed draw real: 0.035727, sys: 0.091190
+# tk
+#Elapsed plot real: 0.061634, sys: 0.144489
+#Elapsed draw real: 0.075265, sys: 0.211098
+print 'Using backend', backend_idx, matplotlib.rcsetup.interactive_bk[backend_idx]
+matplotlib.use(matplotlib.rcsetup.interactive_bk[backend_idx])
+
+
 from pylab import *
+from jby_misc import WithTimer
 
 import sys
 caffe_root = '../'
@@ -90,22 +122,29 @@ def cam_loop():
     while True:
         if frame is not None:
             #cv2.resize(frame[:,280:(280+720),:], 0, im_small)
-            im_small = cv2.resize(frame[:,280:(280+720),:], small_shape[:2])
-            cv2.imshow('preview', im_small)
-            safe_predict(net, im_small)
+            with WithTimer('resize'):
+                im_small = cv2.resize(frame[:,280:(280+720),:], small_shape[:2])
+            with WithTimer('imshow'):
+                cv2.imshow('preview', im_small)
+            with WithTimer('predict'):
+                safe_predict(net, im_small)
             print
-            clf()
-            plot_probs(net, labels)
-            draw()
+            with WithTimer('plot'):
+                clf()
+                plot_probs(net, labels)
+            with WithTimer('draw'):
+                draw()
+                #show()
             #print frame.mean()
-        rval, frame = cap.read()
+        with WithTimer('read frame'):
+            rval, frame = cap.read()
         
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
 
 
-def classit():
+def classit(filename='/Users/jason/s/caffe/examples/images/lion.jpg'):
     #net = get_net()
     labels = get_labels()
 
