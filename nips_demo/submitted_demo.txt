@@ -1,0 +1,52 @@
+Demonstration Applications for NIPS 2014
+Created 	2014-9-15 15:58 PDT
+Updated 	2014-9-15 15:59 PDT
+Title 	
+
+Playing with Convnets
+
+Paper ID 	
+
+Abstract 	
+
+Technology 	
+
+The seminal work by Krizhevsky, Sutskever, and Hinton at NIPS two years ago [1] kicked off a craze of training convolutional networks on ImageNet. These networks have since been trained, improved, and tweaked by those in the field dozens of times over. The trained networks have also been adapted to many new tasks. However, although a stupendous amount of recent progress has been made recently, the elegant inner workings of convolutional networks are generally hidden behind simply reported error metrics.
+
+In this demo, we attempt to expose some of these inner workings by allowing audience members to interact with a video camera hooked to a trained convnet, which we have found surprisingly informative.
+
+We visualize network activations in several ways. First, one visualization shows convolutional activations plotted directly as overlaid heatmaps on the input image, allowing one to see where high-level units are active. A second visualization mode shows activations mapped back to pixel space using gradient methods directly (unpublished work) or deconvolutional networks [2]. Finally, a third visualization shows the max predicted classes by the network, which can be illuminating as audience members try to effect or supress certain classes by changing not only objects in the scene, but the surrounding context as well. We've found it quite interesting to interact with trained nets in this way, as well as to compare features between networks trained on all of ImageNet to those in nets trained on only natural images or only man-made images (as will be presented in a paper at NIPS this year [3]).
+
+[1] A. Krizhevsky, I. Sutskever, and G. Hinton. Imagenet classification with deep convolutional neural networks. NIPS 2012.
+
+[2] M. D. Zeiler and R. Fergus. Visualizing and understanding convolutional neural networks. arXiv preprint arXiv:1311.2901, 2013.
+
+[3] J Yosinski, J Clune, Y Bengio, H Lipson. Quantifying the transferability of features in deep neural networks. NIPS 2014 (to appear).
+
+Experience 	
+
+The demo features a camera, computer, and display monitor (or projector, depending on space). Users create a scene in front of the camera and then can visualize the activations of the network using the methods described above. Because many of the ImageNet categories evoke scenes rather removed from the indoor environment of the NIPS conference, we will provide props and several printouts of objects and backgrounds to allow audience experimentation.
+
+Readiness 	
+
+The demo is approximately 70% finished. Remaining work includes:
+
+ - Integrating our deconvolutional network code with the visualization code (which we do not expect to be difficult)
+ - Increasing the framerate, if possible. Currently the speed of the demo is about 2 frames per second, but the bottleneck is almost entirely the OpenCV capture method we are using. The convnet and calculated visualizations are quite fast. Thus, we're working on a way of capturing images from the camera and piping them to the GPU more quickly.
+
+We could show a 70% finished demo this week or a 100% finished demo next month.
+
+Equipment 	
+
+USB camera, laptop, monitor or projector, props (example objects and printed backgrounds)
+
+External URI 	
+
+Demonstration Table 	Yes
+Poster Board 	Yes
+Power Strip 	Yes
+Special Needs 	
+
+Conference 	NIPS 2014
+Organizers 	Hod Lipson
+Jason Yosinski
