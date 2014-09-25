@@ -11,9 +11,9 @@
 namespace caffe {
 
 template <typename Dtype>
-Dtype MultiLabelHingeLossLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
+Dtype JBY_MultiLabelHingeLossLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
     vector<Blob<Dtype>*>* top) {
-  LOG(INFO) << "MultiLabelHingeLossLayer::Forward_cpu begin";
+  //LOG(INFO) << "MultiLabelHingeLossLayer::Forward_cpu begin";
   const Dtype* bottom_data = bottom[0]->cpu_data();
   Dtype* bottom_diff = bottom[0]->mutable_cpu_diff();
   const Dtype* label = bottom[1]->cpu_data();
@@ -44,32 +44,37 @@ Dtype MultiLabelHingeLossLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& b
       } else if (this_label == 0) {
         bottom_diff[i * dim + j] = Dtype(0);
       } else {
-        LOG(ERROR) << "Label shoudl be -1, 0, or 1 but it is " << this_label;
+        LOG(FATAL) << "Label should be -1, 0, or 1 but it is " << this_label;
       }
     }
   }
 
   Dtype loss;
-  switch (this->layer_param_.multi_label_hinge_loss_param().norm()) {
-  case MultiLabelHingeLossParameter_Norm_L1:
+  switch (this->layer_param_.jby_multi_label_hinge_loss_param().norm()) {
+  case JBY_MultiLabelHingeLossParameter_Norm_L1:
     loss = caffe_cpu_asum(count, bottom_diff) / num;
     break;
-  case MultiLabelHingeLossParameter_Norm_L2:
+  case JBY_MultiLabelHingeLossParameter_Norm_L2:
     loss = caffe_cpu_dot(count, bottom_diff, bottom_diff) / num;
     break;
   default:
     LOG(FATAL) << "Unknown Norm";
   }
 
-  LOG(INFO) << "MultiLabelHingeLossLayer::Forward_cpu end";
-  LOG(INFO) << "Returning loss " << loss;
+  if (top->size() >= 1) {
+    CHECK_EQ((*top)[0]->count(), 1) << "Expected top with single item but got count > 1";
+    (*top)[0]->mutable_cpu_data()[0] = loss;
+  }
+
+  //LOG(INFO) << "MultiLabelHingeLossLayer::Forward_cpu end";
+  //LOG(INFO) << "Returning loss " << loss;
   return loss;
 }
 
 template <typename Dtype>
-void MultiLabelHingeLossLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
+void JBY_MultiLabelHingeLossLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
     const vector<bool>& propagate_down, vector<Blob<Dtype>*>* bottom) {
-  LOG(INFO) << "MultiLabelHingeLossLayer::Backward_cpu begin";
+  //LOG(INFO) << "MultiLabelHingeLossLayer::Backward_cpu begin";
   if (propagate_down[1]) {
     LOG(FATAL) << this->type_name()
                << " Layer cannot backpropagate to label inputs.";
@@ -97,26 +102,26 @@ void MultiLabelHingeLossLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& t
         } else if (this_label == 0) {
           CHECK_EQ(bottom_diff[i * dim + j], Dtype(0)) << "This should already be 0 from the forward pass";
         } else {
-          LOG(ERROR) << "Label shoudl be -1, 0, or 1 but it is " << this_label;
+          LOG(FATAL) << "Label should be -1, 0, or 1 but it is " << this_label;
         }
       }
     }
 
-    switch (this->layer_param_.multi_label_hinge_loss_param().norm()) {
-    case MultiLabelHingeLossParameter_Norm_L1:
+    switch (this->layer_param_.jby_multi_label_hinge_loss_param().norm()) {
+    case JBY_MultiLabelHingeLossParameter_Norm_L1:
       caffe_cpu_sign(count, bottom_diff, bottom_diff);
       caffe_scal(count, Dtype(1. / num), bottom_diff);
       break;
-    case MultiLabelHingeLossParameter_Norm_L2:
+    case JBY_MultiLabelHingeLossParameter_Norm_L2:
       caffe_scal(count, Dtype(2. / num), bottom_diff);
       break;
     default:
       LOG(FATAL) << "Unknown Norm";
     }
   }
-  LOG(INFO) << "MultiLabelHingeLossLayer::Backward_cpu end";
+  //LOG(INFO) << "MultiLabelHingeLossLayer::Backward_cpu end";
 }
 
-INSTANTIATE_CLASS(MultiLabelHingeLossLayer);
+INSTANTIATE_CLASS(JBY_MultiLabelHingeLossLayer);
 
 }  // namespace caffe

@@ -19,6 +19,8 @@ Layer<Dtype>* GetLayer(const LayerParameter& param) {
   switch (type) {
   case LayerParameter_LayerType_ACCURACY:
     return new AccuracyLayer<Dtype>(param);
+  case LayerParameter_LayerType_JBY_MULTI_LABEL_ACCURACY:
+    return new JBY_MultiLabelAccuracyLayer<Dtype>(param);
   case LayerParameter_LayerType_ARGMAX:
     return new ArgMaxLayer<Dtype>(param);
   case LayerParameter_LayerType_BNLL:
@@ -45,8 +47,8 @@ Layer<Dtype>* GetLayer(const LayerParameter& param) {
     return new HDF5OutputLayer<Dtype>(param);
   case LayerParameter_LayerType_HINGE_LOSS:
     return new HingeLossLayer<Dtype>(param);
-  case LayerParameter_LayerType_MULTI_LABEL_HINGE_LOSS:
-    return new MultiLabelHingeLossLayer<Dtype>(param);
+  case LayerParameter_LayerType_JBY_MULTI_LABEL_HINGE_LOSS:
+    return new JBY_MultiLabelHingeLossLayer<Dtype>(param);
   case LayerParameter_LayerType_IMAGE_DATA:
     return new ImageDataLayer<Dtype>(param);
   case LayerParameter_LayerType_IM2COL:

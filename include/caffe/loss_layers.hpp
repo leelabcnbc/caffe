@@ -50,6 +50,38 @@ class AccuracyLayer : public Layer<Dtype> {
   int top_k_;
 };
 
+/* JBY_MultiLabelAccuracyLayer
+  Note: not an actual loss layer! Does not implement backwards step.
+  Computes the accuracy of a with respect to b.
+
+  a > 0   ->   classified as +1
+  a < 0   ->   classified as -1
+  b = 0   ->   classification is ignored
+*/
+template <typename Dtype>
+class JBY_MultiLabelAccuracyLayer : public Layer<Dtype> {
+ public:
+  explicit JBY_MultiLabelAccuracyLayer(const LayerParameter& param)
+      : Layer<Dtype>(param) {}
+  virtual void SetUp(const vector<Blob<Dtype>*>& bottom,
+      vector<Blob<Dtype>*>* top);
+
+  virtual inline LayerParameter_LayerType type() const {
+    return LayerParameter_LayerType_JBY_MULTI_LABEL_ACCURACY;
+  }
+
+  virtual inline int ExactNumBottomBlobs() const { return 2; }
+  virtual inline int ExactNumTopBlobs() const { return 1; }
+
+ protected:
+  virtual Dtype Forward_cpu(const vector<Blob<Dtype>*>& bottom,
+      vector<Blob<Dtype>*>* top);
+  virtual void Backward_cpu(const vector<Blob<Dtype>*>& top,
+      const vector<bool>& propagate_down, vector<Blob<Dtype>*>* bottom) {
+    NOT_IMPLEMENTED;
+  }
+};
+
 /* LossLayer
   Takes two inputs of same num (a and b), and has no output.
   The gradient is propagated to a.
@@ -128,7 +160,7 @@ class HingeLossLayer : public LossLayer<Dtype> {
       const vector<bool>& propagate_down, vector<Blob<Dtype>*>* bottom);
 };
 
-/* MultiLabelHingeLossLayer
+/* JBY_MultiLabelHingeLossLayer
    TODO: more documentation.
 
    Two differences:
@@ -141,13 +173,13 @@ class HingeLossLayer : public LossLayer<Dtype> {
    0 can be anything and does not contribute to cost.
 */
 template <typename Dtype>
-class MultiLabelHingeLossLayer : public LossLayer<Dtype> {
+class JBY_MultiLabelHingeLossLayer : public LossLayer<Dtype> {
  public:
-  explicit MultiLabelHingeLossLayer(const LayerParameter& param)
+  explicit JBY_MultiLabelHingeLossLayer(const LayerParameter& param)
       : LossLayer<Dtype>(param) {}
 
   virtual inline LayerParameter_LayerType type() const {
-    return LayerParameter_LayerType_MULTI_LABEL_HINGE_LOSS;
+    return LayerParameter_LayerType_JBY_MULTI_LABEL_HINGE_LOSS;
   }
 
  protected:
